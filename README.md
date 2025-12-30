@@ -13,6 +13,11 @@
   - セキュアなセッション管理
 - **ポータビリティ**: Pure Go SQLiteドライバー使用により、CGO不要でどこでも動作
 
+![ダッシュボード](./docs/images/dashboard.png)
+![課題一覧](./docs/images/list.png)
+![API](./docs/images/api.png)
+
+
 ## TODO
 
 - 取り組み目安時間の登録

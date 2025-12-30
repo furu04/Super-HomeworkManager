@@ -1,0 +1,65 @@
+{{template "base" .}}
+
+{{define "content"}}
+<h1 class="mb-4"><i class="bi bi-people me-2"></i>ユーザー管理</h1>
+
+{{if .error}}<div class="alert alert-danger">{{.error}}</div>{{end}}
+
+{{if .users}}
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead class="table-light">
+            <tr>
+                <th>ID</th>
+                <th>名前</th>
+                <th>メールアドレス</th>
+                <th>ロール</th>
+                <th>登録日</th>
+                <th style="width: 200px">操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .users}}
+            <tr {{if eq .ID $.currentUserID}}class="table-primary" {{end}}>
+                <td>{{.ID}}</td>
+                <td>{{.Name}}{{if eq .ID $.currentUserID}}<span class="badge bg-info ms-2">自分</span>{{end}}</td>
+                <td>{{.Email}}</td>
+                <td>{{if eq .Role "admin"}}<span class="badge bg-danger">管理者</span>{{else}}<span
+                        class="badge bg-secondary">ユーザー</span>{{end}}</td>
+                <td>{{formatDate .CreatedAt}}</td>
+                <td>
+                    {{if ne .ID $.currentUserID}}
+                    <form action="/admin/users/{{.ID}}/role" method="POST" class="d-inline" {{if eq .Role "admin"
+                        }}onsubmit="return confirm('このユーザーを一般ユーザーに降格しますか？')"
+                        {{else}}onsubmit="return confirm('このユーザーを管理者に昇格しますか？')" {{end}}>
+                        <input type="hidden" name="_csrf" value="{{$.csrfToken}}">
+                        {{if eq .Role "admin"}}
+                        <input type="hidden" name="role" value="user">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary" title="ユーザーに降格"><i
+                                class="bi bi-arrow-down"></i></button>
+                        {{else}}
+                        <input type="hidden" name="role" value="admin">
+                        <button type="submit" class="btn btn-sm btn-outline-warning" title="管理者に昇格"><i
+                                class="bi bi-arrow-up"></i></button>
+                        {{end}}
+                    </form>
+                    <form action="/admin/users/{{.ID}}/delete" method="POST" class="d-inline"
+                        onsubmit="return confirm('このユーザーを削除しますか？')">
+                        <input type="hidden" name="_csrf" value="{{$.csrfToken}}">
+                        <button type="submit" class="btn btn-sm btn-outline-danger" title="削除"><i
+                                class="bi bi-trash"></i></button>
+                    </form>
+                    {{else}}<span class="text-muted">-</span>{{end}}
+                </td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+</div>
+{{else}}
+<div class="text-center py-5">
+    <i class="bi bi-people display-1 text-muted"></i>
+    <h3 class="mt-3">ユーザーがいません</h3>
+</div>
+{{end}}
+{{end}}

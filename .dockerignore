@@ -1,0 +1,6 @@
+.git
+homework.db
+config.ini
+*.log
+tmp/
+.env

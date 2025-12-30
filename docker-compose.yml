@@ -1,0 +1,11 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./homework.db:/app/homework.db
+      - ./config.ini:/app/config.ini
+    environment:
+      - TZ=Asia/Tokyo
+    restart: unless-stopped

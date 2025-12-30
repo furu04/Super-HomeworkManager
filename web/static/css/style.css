@@ -1,0 +1,280 @@
+/* Custom styles for Homework Manager */
+
+:root {
+    --primary-color: #4361ee;
+    --secondary-color: #3f37c9;
+    --success-color: #4cc9f0;
+    --warning-color: #f72585;
+    --danger-color: #e63946;
+}
+
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: #f8f9fa;
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
+
+.countdown {
+    font-family: 'Courier New', Courier, monospace;
+    font-weight: bold;
+    color: var(--danger-color);
+}
+
+main {
+    flex: 1;
+}
+
+/* Card enhancements */
+.card {
+    border: none;
+    border-radius: 0.75rem;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+.card-header {
+    background-color: #fff;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    font-weight: 600;
+}
+
+/* Navbar customization */
+.navbar {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-brand {
+    font-weight: 700;
+}
+
+/* Table improvements */
+.table {
+    background-color: #fff;
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.table th {
+    font-weight: 600;
+    border-bottom-width: 1px;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(67, 97, 238, 0.05);
+}
+
+/* Button styles */
+.btn {
+    border-radius: 0.5rem;
+    font-weight: 500;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-primary:hover {
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color);
+}
+
+/* Badge styles */
+.badge {
+    font-weight: 500;
+    padding: 0.4em 0.8em;
+}
+
+/* Form styles */
+.form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.25rem rgba(67, 97, 238, 0.25);
+}
+
+/* Alert enhancements */
+.alert {
+    border: none;
+    border-radius: 0.5rem;
+}
+
+/* Stats cards */
+.card.bg-primary,
+.card.bg-warning,
+.card.bg-info,
+.card.bg-danger {
+    border-radius: 1rem;
+}
+
+.card.bg-primary:hover,
+.card.bg-warning:hover,
+.card.bg-info:hover,
+.card.bg-danger:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Tabs - Removed conflicted specific styles as they are managed in templates */
+.nav-tabs .nav-link {
+    font-weight: 500;
+}
+
+/* Footer */
+.footer {
+    border-top: 1px solid #e9ecef;
+}
+
+/* Login/Register cards */
+.card.shadow {
+    border-radius: 1rem;
+}
+
+/* Empty states */
+.text-muted.display-1 {
+    color: #dee2e6 !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .card-body {
+        padding: 0.75rem;
+    }
+
+    .table-responsive {
+        font-size: 0.85rem;
+    }
+}
+
+.table td,
+.table th {
+    padding: 0.35rem 0.5rem !important;
+}
+
+.page-header {
+    margin-bottom: 0.75rem !important;
+}
+
+/* Animations for Anxiety/Urgency */
+@keyframes pulse-bg {
+
+    0%,
+    100% {
+        background-color: #fff3cd;
+    }
+
+    50% {
+        background-color: #ffe69c;
+    }
+}
+
+@keyframes pulse-bg-danger {
+
+    0%,
+    100% {
+        background-color: #f8d7da;
+    }
+
+    50% {
+        background-color: #f5c2c7;
+    }
+}
+
+@keyframes blink-text {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.7;
+    }
+}
+
+.anxiety-warning {
+    animation: pulse-bg 2s infinite;
+}
+
+.anxiety-danger {
+    animation: pulse-bg-danger 1s infinite;
+}
+
+/* Custom Table Styles - Compact */
+.custom-table thead th {
+    border-bottom: 2px solid #dee2e6;
+    font-size: 0.8rem;
+    color: #495057;
+    font-weight: 600;
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+    white-space: nowrap;
+}
+
+.custom-table tbody tr {
+    transition: background-color 0.2s;
+}
+
+.custom-table tbody td {
+    border-bottom: 1px solid #dee2e6;
+    vertical-align: middle;
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+    font-size: 0.9rem;
+}
+
+.custom-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Compact form elements */
+.form-control-custom,
+.form-select-custom,
+.btn-custom {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.9rem;
+    border-radius: 0.25rem;
+}
+
+/* Custom Tab Styles */
+.nav-tabs .nav-link {
+    font-size: 0.9rem;
+    padding: 0.5rem 1rem;
+    color: #6c757d;
+    /* text-muted */
+    border: none;
+}
+
+.nav-tabs .nav-link:hover {
+    color: #000;
+    border: none;
+}
+
+.nav-tabs .nav-link.active {
+    color: #000 !important;
+    font-weight: 700;
+    border-bottom: 3px solid #000 !important;
+    background: transparent;
+}
+
+/* Status Icon Size */
+.bi-circle,
+.bi-check-circle-fill {
+    font-size: 1rem;
+}
+
+/* Urgency styles for countdown */
+.countdown-urgent {
+    color: #dc3545;
+    font-weight: 700;
+    animation: blink-text 1s infinite;
+}
+
+.countdown-warning {
+    color: #fd7e14;
+    font-weight: 700;
+}

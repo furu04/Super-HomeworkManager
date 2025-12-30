@@ -1,0 +1,55 @@
+; Homework Manager 設定ファイル
+; 環境変数が設定されている場合はそちらが優先されます
+
+[server]
+; サーバーポート
+port = 8080
+
+; デバッグモード (true/false)
+debug = true
+
+[database]
+; データベースドライバー: sqlite, mysql, postgres
+driver = sqlite
+
+; SQLite用設定
+path = homework.db
+
+; MySQL/PostgreSQL用設定（driverをmysqlまたはpostgresに変更して使用）
+; host = localhost
+; port = 3306
+; user = root
+; password = 
+; name = homework_manager
+
+; PostgreSQL例:
+; driver = postgres
+; host = localhost
+; port = 5432
+; user = postgres
+; password = secret
+; name = homework_manager
+
+[session]
+; セッション暗号化キー（本番環境では必ず変更してください）
+secret = homework-manager-secret-key-change-in-production
+
+[auth]
+; 新規ユーザー登録を許可するか (true/false)
+; falseにすると登録ページが無効化されます
+allow_registration = true
+
+[security]
+; HTTPS使用時はtrueに設定（Secure cookie属性が有効になります）
+https = false
+
+; CSRFトークン秘密鍵（本番環境では必ず変更してください）
+csrf_secret = change-this-to-a-secure-random-string
+# Enable rate limiting
+rate_limit_enabled = true
+# Max requests per window
+rate_limit_requests = 100
+# Window size in seconds
+rate_limit_window = 60
+# Trusted proxies (comma separated IP addresses or CIDR)
+# trusted_proxies = 127.0.0.1, 10.0.0.0/8

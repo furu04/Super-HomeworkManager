@@ -1,7 +1,7 @@
 # Binaries
-homework-manager
+/homework-manager
 homework-manager.exe
-server
+/server
 server.exe
 *.exe
 *.dll

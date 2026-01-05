@@ -186,3 +186,181 @@ func (r *AssignmentRepository) CountOverdueByUserID(userID uint) (int64, error) 
 		Where("user_id = ? AND is_completed = ? AND due_date < ?", userID, false, now).Count(&count).Error
 	return count, err
 }
+
+// StatisticsFilter holds filter parameters for statistics queries
+type StatisticsFilter struct {
+	Subject         string
+	From            *time.Time
+	To              *time.Time
+	IncludeArchived bool
+}
+
+// AssignmentStatistics holds statistics data
+type AssignmentStatistics struct {
+	Total                  int64
+	Completed              int64
+	Pending                int64
+	Overdue                int64
+	CompletedOnTime        int64
+	OnTimeCompletionRate   float64
+}
+
+// SubjectStatistics holds statistics for a specific subject
+type SubjectStatistics struct {
+	Subject              string
+	Total                int64
+	Completed            int64
+	Pending              int64
+	Overdue              int64
+	CompletedOnTime      int64
+	OnTimeCompletionRate float64
+}
+
+// GetStatistics returns statistics for a user with optional filters
+func (r *AssignmentRepository) GetStatistics(userID uint, filter StatisticsFilter) (*AssignmentStatistics, error) {
+	now := time.Now()
+	stats := &AssignmentStatistics{}
+
+	// Base query
+	baseQuery := r.db.Model(&models.Assignment{}).Where("user_id = ?", userID)
+	
+	// Apply subject filter
+	if filter.Subject != "" {
+		baseQuery = baseQuery.Where("subject = ?", filter.Subject)
+	}
+	
+	// Apply date range filter (by created_at)
+	if filter.From != nil {
+		baseQuery = baseQuery.Where("created_at >= ?", *filter.From)
+	}
+	if filter.To != nil {
+		// Add 1 day to include the entire "to" date
+		toEnd := filter.To.AddDate(0, 0, 1)
+		baseQuery = baseQuery.Where("created_at < ?", toEnd)
+	}
+
+	// Apply archived filter
+	if !filter.IncludeArchived {
+		baseQuery = baseQuery.Where("is_archived = ?", false)
+	}
+
+	// Total count
+	if err := baseQuery.Count(&stats.Total).Error; err != nil {
+		return nil, err
+	}
+
+	// Completed count
+	completedQuery := baseQuery.Session(&gorm.Session{})
+	if err := completedQuery.Where("is_completed = ?", true).Count(&stats.Completed).Error; err != nil {
+		return nil, err
+	}
+
+	// Pending count
+	pendingQuery := baseQuery.Session(&gorm.Session{})
+	if err := pendingQuery.Where("is_completed = ?", false).Count(&stats.Pending).Error; err != nil {
+		return nil, err
+	}
+
+	// Overdue count
+	overdueQuery := baseQuery.Session(&gorm.Session{})
+	if err := overdueQuery.Where("is_completed = ? AND due_date < ?", false, now).Count(&stats.Overdue).Error; err != nil {
+		return nil, err
+	}
+
+	// Completed on time count (completed_at <= due_date)
+	onTimeQuery := baseQuery.Session(&gorm.Session{})
+	if err := onTimeQuery.Where("is_completed = ? AND completed_at <= due_date", true).Count(&stats.CompletedOnTime).Error; err != nil {
+		return nil, err
+	}
+
+	// Calculate on-time completion rate
+	if stats.Completed > 0 {
+		stats.OnTimeCompletionRate = float64(stats.CompletedOnTime) / float64(stats.Completed) * 100
+	}
+
+	return stats, nil
+}
+
+// GetStatisticsBySubjects returns statistics grouped by subject
+func (r *AssignmentRepository) GetStatisticsBySubjects(userID uint, filter StatisticsFilter) ([]SubjectStatistics, error) {
+	now := time.Now()
+	subjects, err := r.GetSubjectsByUserID(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	var results []SubjectStatistics
+	for _, subject := range subjects {
+		subjectFilter := StatisticsFilter{
+			Subject: subject,
+			From:    filter.From,
+			To:      filter.To,
+		}
+		stats, err := r.GetStatistics(userID, subjectFilter)
+		if err != nil {
+			return nil, err
+		}
+
+		// Count overdue for this subject
+		overdueQuery := r.db.Model(&models.Assignment{}).
+			Where("user_id = ? AND subject = ? AND is_completed = ? AND due_date < ?", userID, subject, false, now)
+		if filter.From != nil {
+			overdueQuery = overdueQuery.Where("created_at >= ?", *filter.From)
+		}
+		if filter.To != nil {
+			toEnd := filter.To.AddDate(0, 0, 1)
+			overdueQuery = overdueQuery.Where("created_at < ?", toEnd)
+		}
+		var overdueCount int64
+		overdueQuery.Count(&overdueCount)
+
+		results = append(results, SubjectStatistics{
+			Subject:              subject,
+			Total:                stats.Total,
+			Completed:            stats.Completed,
+			Pending:              stats.Pending,
+			Overdue:              overdueCount,
+			CompletedOnTime:      stats.CompletedOnTime,
+			OnTimeCompletionRate: stats.OnTimeCompletionRate,
+		})
+	}
+
+	return results, nil
+}
+
+// ArchiveBySubject archives all assignments for a subject
+func (r *AssignmentRepository) ArchiveBySubject(userID uint, subject string) error {
+	return r.db.Model(&models.Assignment{}).
+		Where("user_id = ? AND subject = ?", userID, subject).
+		Update("is_archived", true).Error
+}
+
+// UnarchiveBySubject unarchives all assignments for a subject
+func (r *AssignmentRepository) UnarchiveBySubject(userID uint, subject string) error {
+	return r.db.Model(&models.Assignment{}).
+		Where("user_id = ? AND subject = ?", userID, subject).
+		Update("is_archived", false).Error
+}
+
+// GetArchivedSubjects returns a list of archived subjects for a user
+func (r *AssignmentRepository) GetArchivedSubjects(userID uint) ([]string, error) {
+	var subjects []string
+	err := r.db.Model(&models.Assignment{}).
+		Where("user_id = ? AND is_archived = ? AND subject != ''", userID, true).
+		Distinct("subject").
+		Pluck("subject", &subjects).Error
+	return subjects, err
+}
+
+// GetSubjectsByUserIDWithArchived returns subjects optionally including archived
+func (r *AssignmentRepository) GetSubjectsByUserIDWithArchived(userID uint, includeArchived bool) ([]string, error) {
+	var subjects []string
+	query := r.db.Model(&models.Assignment{}).
+		Where("user_id = ? AND subject != ''", userID)
+	if !includeArchived {
+		query = query.Where("is_archived = ?", false)
+	}
+	err := query.Distinct("subject").Pluck("subject", &subjects).Error
+	return subjects, err
+}
+

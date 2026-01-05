@@ -51,5 +51,10 @@ rate_limit_enabled = true
 rate_limit_requests = 100
 # Window size in seconds
 rate_limit_window = 60
-# Trusted proxies (comma separated IP addresses or CIDR)
-# trusted_proxies = 127.0.0.1, 10.0.0.0/8
+#; Trusted proxies (comma separated IP addresses or CIDR)
+; trusted_proxies = 127.0.0.1, 10.0.0.0/8
+
+[notification]
+; Telegram Bot Token (@BotFatherで取得)
+; ユーザーはプロフィール画面でChat IDを設定します
+telegram_bot_token =

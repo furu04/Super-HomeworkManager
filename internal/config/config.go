@@ -17,6 +17,10 @@ type DatabaseConfig struct {
 	Name     string
 }
 
+type NotificationConfig struct {
+	TelegramBotToken string
+}
+
 type Config struct {
 	Port              string
 	SessionSecret     string
@@ -29,6 +33,7 @@ type Config struct {
 	RateLimitWindow   int
 	TrustedProxies    []string
 	Database          DatabaseConfig
+	Notification      NotificationConfig
 }
 
 func Load(configPath string) *Config {
@@ -123,6 +128,12 @@ func Load(configPath string) *Config {
 				cfg.TrustedProxies = []string{proxies}
 			}
 		}
+
+		// Notification section
+		section = iniFile.Section("notification")
+		if section.HasKey("telegram_bot_token") {
+			cfg.Notification.TelegramBotToken = section.Key("telegram_bot_token").String()
+		}
 	} else {
 		log.Println("config.ini not found, using environment variables or defaults")
 	}
@@ -168,6 +179,9 @@ func Load(configPath string) *Config {
 	}
 	if trustedProxies := os.Getenv("TRUSTED_PROXIES"); trustedProxies != "" {
 		cfg.TrustedProxies = []string{trustedProxies}
+	}
+	if telegramToken := os.Getenv("TELEGRAM_BOT_TOKEN"); telegramToken != "" {
+		cfg.Notification.TelegramBotToken = telegramToken
 	}
 
 	if cfg.SessionSecret == "" {

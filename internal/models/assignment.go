@@ -15,10 +15,18 @@ type Assignment struct {
 	Priority    string         `gorm:"not null;default:medium" json:"priority"` // low, medium, high
 	DueDate     time.Time      `gorm:"not null" json:"due_date"`
 	IsCompleted bool           `gorm:"default:false" json:"is_completed"`
+	IsArchived  bool           `gorm:"default:false;index" json:"is_archived"`
 	CompletedAt *time.Time     `json:"completed_at,omitempty"`
-	CreatedAt   time.Time      `json:"created_at"`
-	UpdatedAt   time.Time      `json:"updated_at"`
-	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`
+	// Reminder notification settings (one-time)
+	ReminderEnabled bool       `gorm:"default:false" json:"reminder_enabled"`
+	ReminderAt      *time.Time `json:"reminder_at,omitempty"`
+	ReminderSent    bool       `gorm:"default:false;index" json:"reminder_sent"`
+	// Urgent reminder settings (repeating until completed)
+	UrgentReminderEnabled   bool       `gorm:"default:true" json:"urgent_reminder_enabled"`
+	LastUrgentReminderSent  *time.Time `json:"last_urgent_reminder_sent,omitempty"`
+	CreatedAt               time.Time  `json:"created_at"`
+	UpdatedAt               time.Time  `json:"updated_at"`
+	DeletedAt               gorm.DeletedAt `gorm:"index" json:"-"`
 
 	User *User `gorm:"foreignKey:UserID" json:"user,omitempty"`
 }

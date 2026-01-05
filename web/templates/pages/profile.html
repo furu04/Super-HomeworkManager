@@ -2,7 +2,7 @@
 
 {{define "content"}}
 <div class="row justify-content-center">
-    <div class="col-lg-8">
+    <div class="col-lg-10">
         <h1 class="mb-4"><i class="bi bi-person me-2"></i>プロフィール</h1>
         <div class="row g-4">
             <div class="col-md-6">
@@ -64,6 +64,56 @@
                         </form>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- 通知設定 -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-bell me-2"></i>通知設定</h5>
+            </div>
+            <div class="card-body">
+                {{if .notifyError}}<div class="alert alert-danger">{{.notifyError}}</div>{{end}}
+                {{if .notifySuccess}}<div class="alert alert-success">{{.notifySuccess}}</div>{{end}}
+                <form method="POST" action="/profile/notifications">
+                    {{.csrfField}}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="mb-3"><i class="bi bi-telegram me-1"></i>Telegram</h6>
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="telegram_enabled"
+                                    name="telegram_enabled" {{if .notifySettings.TelegramEnabled}}checked{{end}}>
+                                <label class="form-check-label" for="telegram_enabled">Telegram通知を有効化</label>
+                            </div>
+                            <div class="mb-3">
+                                <label for="telegram_chat_id" class="form-label">Chat ID</label>
+                                <input type="text" class="form-control" id="telegram_chat_id" name="telegram_chat_id"
+                                    value="{{.notifySettings.TelegramChatID}}" placeholder="例: 123456789">
+                                <div class="form-text">
+                                    Botに<code>/start</code>を送信後、<a href="https://t.me/userinfobot"
+                                        target="_blank">@userinfobot</a>でIDを確認
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="mb-3"><i class="bi bi-chat-dots me-1"></i>LINE Notify</h6>
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="line_enabled" name="line_enabled"
+                                    {{if .notifySettings.LineEnabled}}checked{{end}}>
+                                <label class="form-check-label" for="line_enabled">LINE通知を有効化</label>
+                            </div>
+                            <div class="mb-3">
+                                <label for="line_token" class="form-label">アクセストークン</label>
+                                <input type="password" class="form-control" id="line_token" name="line_token"
+                                    value="{{.notifySettings.LineNotifyToken}}" placeholder="トークンを入力">
+                                <div class="form-text">
+                                    <a href="https://notify-bot.line.me/my/" target="_blank">LINE Notify</a>でトークンを発行
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>通知設定を保存</button>
+                </form>
             </div>
         </div>
     </div>

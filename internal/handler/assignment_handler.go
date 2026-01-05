@@ -119,6 +119,17 @@ func (h *AssignmentHandler) Create(c *gin.Context) {
 	priority := c.PostForm("priority")
 	dueDateStr := c.PostForm("due_date")
 
+	// Parse reminder settings
+	reminderEnabled := c.PostForm("reminder_enabled") == "on"
+	reminderAtStr := c.PostForm("reminder_at")
+	var reminderAt *time.Time
+	if reminderEnabled && reminderAtStr != "" {
+		if parsed, err := time.ParseInLocation("2006-01-02T15:04", reminderAtStr, time.Local); err == nil {
+			reminderAt = &parsed
+		}
+	}
+	urgentReminderEnabled := c.PostForm("urgent_reminder_enabled") == "on"
+
 	dueDate, err := time.ParseInLocation("2006-01-02T15:04", dueDateStr, time.Local)
 	if err != nil {
 		dueDate, err = time.ParseInLocation("2006-01-02", dueDateStr, time.Local)
@@ -140,7 +151,7 @@ func (h *AssignmentHandler) Create(c *gin.Context) {
 		dueDate = dueDate.Add(23*time.Hour + 59*time.Minute)
 	}
 
-	_, err = h.assignmentService.Create(userID, title, description, subject, priority, dueDate)
+	_, err = h.assignmentService.Create(userID, title, description, subject, priority, dueDate, reminderEnabled, reminderAt, urgentReminderEnabled)
 	if err != nil {
 		role, _ := c.Get(middleware.UserRoleKey)
 		name, _ := c.Get(middleware.UserNameKey)
@@ -191,6 +202,17 @@ func (h *AssignmentHandler) Update(c *gin.Context) {
 	priority := c.PostForm("priority")
 	dueDateStr := c.PostForm("due_date")
 
+	// Parse reminder settings
+	reminderEnabled := c.PostForm("reminder_enabled") == "on"
+	reminderAtStr := c.PostForm("reminder_at")
+	var reminderAt *time.Time
+	if reminderEnabled && reminderAtStr != "" {
+		if parsed, err := time.ParseInLocation("2006-01-02T15:04", reminderAtStr, time.Local); err == nil {
+			reminderAt = &parsed
+		}
+	}
+	urgentReminderEnabled := c.PostForm("urgent_reminder_enabled") == "on"
+
 	dueDate, err := time.ParseInLocation("2006-01-02T15:04", dueDateStr, time.Local)
 	if err != nil {
 		dueDate, err = time.ParseInLocation("2006-01-02", dueDateStr, time.Local)
@@ -201,7 +223,7 @@ func (h *AssignmentHandler) Update(c *gin.Context) {
 		dueDate = dueDate.Add(23*time.Hour + 59*time.Minute)
 	}
 
-	_, err = h.assignmentService.Update(userID, uint(id), title, description, subject, priority, dueDate)
+	_, err = h.assignmentService.Update(userID, uint(id), title, description, subject, priority, dueDate, reminderEnabled, reminderAt, urgentReminderEnabled)
 	if err != nil {
 		c.Redirect(http.StatusFound, "/assignments")
 		return
@@ -231,3 +253,90 @@ func (h *AssignmentHandler) Delete(c *gin.Context) {
 
 	c.Redirect(http.StatusFound, "/assignments")
 }
+
+func (h *AssignmentHandler) Statistics(c *gin.Context) {
+	userID := h.getUserID(c)
+	role, _ := c.Get(middleware.UserRoleKey)
+	name, _ := c.Get(middleware.UserNameKey)
+
+	// Parse filter parameters
+	filter := service.StatisticsFilter{
+		Subject:         c.Query("subject"),
+		IncludeArchived: c.Query("include_archived") == "true",
+	}
+
+	fromStr := c.Query("from")
+	toStr := c.Query("to")
+
+	// Parse from date
+	if fromStr != "" {
+		fromDate, err := time.ParseInLocation("2006-01-02", fromStr, time.Local)
+		if err == nil {
+			filter.From = &fromDate
+		}
+	}
+
+	// Parse to date
+	if toStr != "" {
+		toDate, err := time.ParseInLocation("2006-01-02", toStr, time.Local)
+		if err == nil {
+			filter.To = &toDate
+		}
+	}
+
+	stats, err := h.assignmentService.GetStatistics(userID, filter)
+	if err != nil {
+		RenderHTML(c, http.StatusInternalServerError, "error.html", gin.H{
+			"title":   "エラー",
+			"message": "統計情報の取得に失敗しました",
+		})
+		return
+	}
+
+	// Get available subjects for filter dropdown (exclude archived)
+	subjects, _ := h.assignmentService.GetSubjectsWithArchived(userID, false)
+	archivedSubjects, _ := h.assignmentService.GetArchivedSubjects(userID)
+
+	// Create a map for quick lookup of archived subjects
+	archivedMap := make(map[string]bool)
+	for _, s := range archivedSubjects {
+		archivedMap[s] = true
+	}
+
+	RenderHTML(c, http.StatusOK, "assignments/statistics.html", gin.H{
+		"title":            "統計",
+		"stats":            stats,
+		"subjects":         subjects,
+		"archivedSubjects": archivedMap,
+		"selectedSubject":  filter.Subject,
+		"fromDate":         fromStr,
+		"toDate":           toStr,
+		"includeArchived":  filter.IncludeArchived,
+		"isAdmin":          role == "admin",
+		"userName":         name,
+	})
+}
+
+func (h *AssignmentHandler) ArchiveSubject(c *gin.Context) {
+	userID := h.getUserID(c)
+	subject := c.PostForm("subject")
+
+	if subject != "" {
+		h.assignmentService.ArchiveSubject(userID, subject)
+	}
+
+	c.Redirect(http.StatusFound, "/statistics")
+}
+
+func (h *AssignmentHandler) UnarchiveSubject(c *gin.Context) {
+	userID := h.getUserID(c)
+	subject := c.PostForm("subject")
+
+	if subject != "" {
+		h.assignmentService.UnarchiveSubject(userID, subject)
+	}
+
+	c.Redirect(http.StatusFound, "/statistics?include_archived=true")
+}
+
+

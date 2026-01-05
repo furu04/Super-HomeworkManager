@@ -39,6 +39,44 @@
                         <textarea class="form-control" id="description" name="description"
                             rows="3">{{.assignment.Description}}</textarea>
                     </div>
+                    <!-- 通知設定 -->
+                    <div class="card bg-light mb-3">
+                        <div class="card-body py-2">
+                            <h6 class="mb-2"><i class="bi bi-bell me-1"></i>通知設定</h6>
+                            <!-- 督促通知 -->
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="urgent_reminder_enabled"
+                                    name="urgent_reminder_enabled" {{if
+                                    .assignment.UrgentReminderEnabled}}checked{{end}}>
+                                <label class="form-check-label" for="urgent_reminder_enabled">
+                                    督促通知（期限3時間前から繰り返し通知）
+                                </label>
+                            </div>
+                            <div class="form-text small mb-2">
+                                重要度により間隔が変わります：大=10分、中=30分、小=1時間
+                            </div>
+                            <hr class="my-2">
+                            <!-- 1回リマインダー -->
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="reminder_enabled"
+                                    name="reminder_enabled" {{if .assignment.ReminderEnabled}}checked{{end}}
+                                    onchange="toggleReminderDate(this)">
+                                <label class="form-check-label" for="reminder_enabled">
+                                    1回リマインダー（指定日時に1回通知）
+                                </label>
+                            </div>
+                            <div class="mt-2" id="reminder_at_group"
+                                style="display: {{if .assignment.ReminderEnabled}}block{{else}}none{{end}};">
+                                <label for="reminder_at" class="form-label small">通知日時</label>
+                                <input type="datetime-local" class="form-control form-control-sm" id="reminder_at"
+                                    name="reminder_at"
+                                    value="{{if .assignment.ReminderAt}}{{formatDateInput .assignment.ReminderAt}}{{end}}">
+                                {{if .assignment.ReminderSent}}
+                                <div class="text-success small mt-1"><i class="bi bi-check-circle me-1"></i>通知送信済み</div>
+                                {{end}}
+                            </div>
+                        </div>
+                    </div>
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>更新</button>
                         <a href="/assignments" class="btn btn-outline-secondary">キャンセル</a>
@@ -48,4 +86,9 @@
         </div>
     </div>
 </div>
+<script>
+    function toggleReminderDate(checkbox) {
+        document.getElementById('reminder_at_group').style.display = checkbox.checked ? 'block' : 'none';
+    }
+</script>
 {{end}}

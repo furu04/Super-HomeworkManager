@@ -31,18 +31,22 @@ func NewAssignmentService() *AssignmentService {
 	}
 }
 
-func (s *AssignmentService) Create(userID uint, title, description, subject, priority string, dueDate time.Time) (*models.Assignment, error) {
+func (s *AssignmentService) Create(userID uint, title, description, subject, priority string, dueDate time.Time, reminderEnabled bool, reminderAt *time.Time, urgentReminderEnabled bool) (*models.Assignment, error) {
 	if priority == "" {
 		priority = "medium"
 	}
 	assignment := &models.Assignment{
-		UserID:      userID,
-		Title:       title,
-		Description: description,
-		Subject:     subject,
-		Priority:    priority,
-		DueDate:     dueDate,
-		IsCompleted: false,
+		UserID:                userID,
+		Title:                 title,
+		Description:           description,
+		Subject:               subject,
+		Priority:              priority,
+		DueDate:               dueDate,
+		IsCompleted:           false,
+		ReminderEnabled:       reminderEnabled,
+		ReminderAt:            reminderAt,
+		ReminderSent:          false,
+		UrgentReminderEnabled: urgentReminderEnabled,
 	}
 
 	if err := s.assignmentRepo.Create(assignment); err != nil {
@@ -191,7 +195,7 @@ func (s *AssignmentService) SearchAssignments(userID uint, query, priority, filt
 	}, nil
 }
 
-func (s *AssignmentService) Update(userID, assignmentID uint, title, description, subject, priority string, dueDate time.Time) (*models.Assignment, error) {
+func (s *AssignmentService) Update(userID, assignmentID uint, title, description, subject, priority string, dueDate time.Time, reminderEnabled bool, reminderAt *time.Time, urgentReminderEnabled bool) (*models.Assignment, error) {
 	assignment, err := s.GetByID(userID, assignmentID)
 	if err != nil {
 		return nil, err
@@ -202,6 +206,13 @@ func (s *AssignmentService) Update(userID, assignmentID uint, title, description
 	assignment.Subject = subject
 	assignment.Priority = priority
 	assignment.DueDate = dueDate
+	assignment.ReminderEnabled = reminderEnabled
+	assignment.ReminderAt = reminderAt
+	assignment.UrgentReminderEnabled = urgentReminderEnabled
+	// Reset reminder sent flag if reminder settings changed
+	if reminderEnabled && reminderAt != nil {
+		assignment.ReminderSent = false
+	}
 
 	if err := s.assignmentRepo.Update(assignment); err != nil {
 		return nil, err
@@ -267,3 +278,133 @@ func (s *AssignmentService) GetDashboardStats(userID uint) (*DashboardStats, err
 		Subjects:      subjects,
 	}, nil
 }
+
+// StatisticsFilter holds filter parameters for statistics
+type StatisticsFilter struct {
+	Subject         string
+	From            *time.Time
+	To              *time.Time
+	IncludeArchived bool
+}
+
+// SubjectStats holds statistics for a subject
+type SubjectStats struct {
+	Subject              string  `json:"subject"`
+	Total                int64   `json:"total"`
+	Completed            int64   `json:"completed"`
+	Pending              int64   `json:"pending"`
+	Overdue              int64   `json:"overdue"`
+	OnTimeCompletionRate float64 `json:"on_time_completion_rate"`
+	IsArchived           bool    `json:"is_archived,omitempty"`
+}
+
+// StatisticsSummary holds overall statistics
+type StatisticsSummary struct {
+	TotalAssignments     int64          `json:"total_assignments"`
+	CompletedAssignments int64          `json:"completed_assignments"`
+	PendingAssignments   int64          `json:"pending_assignments"`
+	OverdueAssignments   int64          `json:"overdue_assignments"`
+	OnTimeCompletionRate float64        `json:"on_time_completion_rate"`
+	Filter               *FilterInfo    `json:"filter,omitempty"`
+	Subjects             []SubjectStats `json:"subjects,omitempty"`
+}
+
+// FilterInfo shows applied filters in response
+type FilterInfo struct {
+	Subject         *string `json:"subject"`
+	From            *string `json:"from"`
+	To              *string `json:"to"`
+	IncludeArchived bool    `json:"include_archived"`
+}
+
+// GetStatistics returns statistics for a user with optional filters
+func (s *AssignmentService) GetStatistics(userID uint, filter StatisticsFilter) (*StatisticsSummary, error) {
+	// Convert filter to repository filter
+	repoFilter := repository.StatisticsFilter{
+		Subject:         filter.Subject,
+		From:            filter.From,
+		To:              filter.To,
+		IncludeArchived: filter.IncludeArchived,
+	}
+
+	// Get overall statistics
+	stats, err := s.assignmentRepo.GetStatistics(userID, repoFilter)
+	if err != nil {
+		return nil, err
+	}
+
+	summary := &StatisticsSummary{
+		TotalAssignments:     stats.Total,
+		CompletedAssignments: stats.Completed,
+		PendingAssignments:   stats.Pending,
+		OverdueAssignments:   stats.Overdue,
+		OnTimeCompletionRate: stats.OnTimeCompletionRate,
+	}
+
+	// Build filter info
+	filterInfo := &FilterInfo{}
+	hasFilter := false
+	if filter.Subject != "" {
+		filterInfo.Subject = &filter.Subject
+		hasFilter = true
+	}
+	if filter.From != nil {
+		fromStr := filter.From.Format("2006-01-02")
+		filterInfo.From = &fromStr
+		hasFilter = true
+	}
+	if filter.To != nil {
+		toStr := filter.To.Format("2006-01-02")
+		filterInfo.To = &toStr
+		hasFilter = true
+	}
+	filterInfo.IncludeArchived = filter.IncludeArchived
+	if filter.IncludeArchived {
+		hasFilter = true
+	}
+	if hasFilter {
+		summary.Filter = filterInfo
+	}
+
+	// If no specific subject filter, get per-subject statistics
+	if filter.Subject == "" {
+		subjectStats, err := s.assignmentRepo.GetStatisticsBySubjects(userID, repoFilter)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, ss := range subjectStats {
+			summary.Subjects = append(summary.Subjects, SubjectStats{
+				Subject:              ss.Subject,
+				Total:                ss.Total,
+				Completed:            ss.Completed,
+				Pending:              ss.Pending,
+				Overdue:              ss.Overdue,
+				OnTimeCompletionRate: ss.OnTimeCompletionRate,
+			})
+		}
+	}
+
+	return summary, nil
+}
+
+// ArchiveSubject archives all assignments for a subject
+func (s *AssignmentService) ArchiveSubject(userID uint, subject string) error {
+	return s.assignmentRepo.ArchiveBySubject(userID, subject)
+}
+
+// UnarchiveSubject unarchives all assignments for a subject
+func (s *AssignmentService) UnarchiveSubject(userID uint, subject string) error {
+	return s.assignmentRepo.UnarchiveBySubject(userID, subject)
+}
+
+// GetSubjectsWithArchived returns subjects optionally including archived
+func (s *AssignmentService) GetSubjectsWithArchived(userID uint, includeArchived bool) ([]string, error) {
+	return s.assignmentRepo.GetSubjectsByUserIDWithArchived(userID, includeArchived)
+}
+
+// GetArchivedSubjects returns archived subjects only
+func (s *AssignmentService) GetArchivedSubjects(userID uint) ([]string, error) {
+	return s.assignmentRepo.GetArchivedSubjects(userID)
+}
+

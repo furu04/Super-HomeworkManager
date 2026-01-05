@@ -36,6 +36,15 @@ func getFuncMap() template.FuncMap {
 		"daysUntil": func(t time.Time) int {
 			return int(time.Until(t).Hours() / 24)
 		},
+		"divideFloat": func(a, b int64) float64 {
+			if b == 0 {
+				return 0
+			}
+			return float64(a) / float64(b)
+		},
+		"multiplyFloat": func(a float64, b float64) float64 {
+			return a * b
+		},
 	}
 }
 
@@ -164,11 +173,15 @@ func Setup(cfg *config.Config) *gin.Engine {
 
 	authService := service.NewAuthService()
 	apiKeyService := service.NewAPIKeyService()
+	notificationService := service.NewNotificationService(cfg.Notification.TelegramBotToken)
+
+	// Start notification reminder scheduler
+	notificationService.StartReminderScheduler()
 
 	authHandler := handler.NewAuthHandler()
 	assignmentHandler := handler.NewAssignmentHandler()
 	adminHandler := handler.NewAdminHandler()
-	profileHandler := handler.NewProfileHandler()
+	profileHandler := handler.NewProfileHandler(notificationService)
 	apiHandler := handler.NewAPIHandler()
 
 	guest := r.Group("/")
@@ -205,9 +218,15 @@ func Setup(cfg *config.Config) *gin.Engine {
 		auth.POST("/assignments/:id/toggle", assignmentHandler.Toggle)
 		auth.POST("/assignments/:id/delete", assignmentHandler.Delete)
 
+		auth.GET("/statistics", assignmentHandler.Statistics)
+		auth.POST("/statistics/archive-subject", assignmentHandler.ArchiveSubject)
+		auth.POST("/statistics/unarchive-subject", assignmentHandler.UnarchiveSubject)
+
 		auth.GET("/profile", profileHandler.Show)
 		auth.POST("/profile", profileHandler.Update)
 		auth.POST("/profile/password", profileHandler.ChangePassword)
+		auth.POST("/profile/notifications", profileHandler.UpdateNotificationSettings)
+
 		admin := auth.Group("/admin")
 		admin.Use(middleware.AdminRequired())
 		{
@@ -235,6 +254,7 @@ func Setup(cfg *config.Config) *gin.Engine {
 		api.PUT("/assignments/:id", apiHandler.UpdateAssignment)
 		api.DELETE("/assignments/:id", apiHandler.DeleteAssignment)
 		api.PATCH("/assignments/:id/toggle", apiHandler.ToggleAssignment)
+		api.GET("/statistics", apiHandler.GetStatistics)
 	}
 
 	return r

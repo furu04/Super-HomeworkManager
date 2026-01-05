@@ -285,7 +285,7 @@ func (h *APIHandler) CreateAssignment(c *gin.Context) {
 		}
 	}
 
-	assignment, err := h.assignmentService.Create(userID, input.Title, input.Description, input.Subject, input.Priority, dueDate)
+	assignment, err := h.assignmentService.Create(userID, input.Title, input.Description, input.Subject, input.Priority, dueDate, false, nil, true)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create assignment"})
 		return
@@ -351,7 +351,8 @@ func (h *APIHandler) UpdateAssignment(c *gin.Context) {
 		}
 	}
 
-	assignment, err := h.assignmentService.Update(userID, uint(id), title, description, subject, priority, dueDate)
+	// Preserve existing reminder settings for API updates
+	assignment, err := h.assignmentService.Update(userID, uint(id), title, description, subject, priority, dueDate, existing.ReminderEnabled, existing.ReminderAt, existing.UrgentReminderEnabled)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update assignment"})
 		return
@@ -396,3 +397,44 @@ func (h *APIHandler) ToggleAssignment(c *gin.Context) {
 
 	c.JSON(http.StatusOK, assignment)
 }
+
+// GetStatistics returns statistics for the authenticated user
+// GET /api/v1/statistics?subject=数学&from=2025-01-01&to=2025-12-31&include_archived=true
+func (h *APIHandler) GetStatistics(c *gin.Context) {
+	userID := h.getUserID(c)
+
+	// Parse filter parameters
+	filter := service.StatisticsFilter{
+		Subject:         c.Query("subject"),
+		IncludeArchived: c.Query("include_archived") == "true",
+	}
+
+	// Parse from date
+	if fromStr := c.Query("from"); fromStr != "" {
+		fromDate, err := time.ParseInLocation("2006-01-02", fromStr, time.Local)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid 'from' date format. Use YYYY-MM-DD"})
+			return
+		}
+		filter.From = &fromDate
+	}
+
+	// Parse to date
+	if toStr := c.Query("to"); toStr != "" {
+		toDate, err := time.ParseInLocation("2006-01-02", toStr, time.Local)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid 'to' date format. Use YYYY-MM-DD"})
+			return
+		}
+		filter.To = &toDate
+	}
+
+	stats, err := h.assignmentService.GetStatistics(userID, filter)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch statistics"})
+		return
+	}
+
+	c.JSON(http.StatusOK, stats)
+}
+

@@ -45,6 +45,7 @@ X-API-Key: hm_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 | PUT | `/api/v1/assignments/:id` | 課題更新 |
 | DELETE | `/api/v1/assignments/:id` | 課題削除 |
 | PATCH | `/api/v1/assignments/:id/toggle` | 完了状態トグル |
+| GET | `/api/v1/statistics` | 統計情報取得 |
 
 ---
 
@@ -365,6 +366,94 @@ PATCH /api/v1/assignments/:id/toggle
 curl -X PATCH \
   -H "X-API-Key: hm_xxx" \
   http://localhost:8080/api/v1/assignments/1/toggle
+```
+
+---
+
+## 統計情報取得
+
+ユーザーの課題統計を取得します。科目、日付範囲でフィルタリング可能です。
+
+```
+GET /api/v1/statistics
+```
+
+### クエリパラメータ
+
+| パラメータ | 型 | 説明 |
+|------------|------|------|
+| `subject` | string | 科目で絞り込み（省略時: 全科目） |
+| `from` | string | 課題登録日の開始日（YYYY-MM-DD形式） |
+| `to` | string | 課題登録日の終了日（YYYY-MM-DD形式） |
+
+### レスポンス
+
+**200 OK**
+
+```json
+{
+  "total_assignments": 45,
+  "completed_assignments": 30,
+  "pending_assignments": 12,
+  "overdue_assignments": 3,
+  "on_time_completion_rate": 86.7,
+  "filter": {
+    "subject": null,
+    "from": "2025-01-01",
+    "to": "2025-12-31"
+  },
+  "subjects": [
+    {
+      "subject": "数学",
+      "total": 15,
+      "completed": 12,
+      "pending": 2,
+      "overdue": 1,
+      "on_time_completion_rate": 91.7
+    },
+    {
+      "subject": "英語",
+      "total": 10,
+      "completed": 8,
+      "pending": 2,
+      "overdue": 0,
+      "on_time_completion_rate": 87.5
+    }
+  ]
+}
+```
+
+### 科目別統計 (特定科目のみ)
+
+```json
+{
+  "total_assignments": 15,
+  "completed_assignments": 12,
+  "pending_assignments": 2,
+  "overdue_assignments": 1,
+  "on_time_completion_rate": 91.7,
+  "filter": {
+    "subject": "数学",
+    "from": null,
+    "to": null
+  }
+}
+```
+
+### 例
+
+```bash
+# 全体統計
+curl -H "X-API-Key: hm_xxx" http://localhost:8080/api/v1/statistics
+
+# 科目で絞り込み
+curl -H "X-API-Key: hm_xxx" "http://localhost:8080/api/v1/statistics?subject=数学"
+
+# 日付範囲で絞り込み
+curl -H "X-API-Key: hm_xxx" "http://localhost:8080/api/v1/statistics?from=2025-01-01&to=2025-03-31"
+
+# 科目と日付範囲の組み合わせ
+curl -H "X-API-Key: hm_xxx" "http://localhost:8080/api/v1/statistics?subject=数学&from=2025-01-01&to=2025-03-31"
 ```
 
 ---

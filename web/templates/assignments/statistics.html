@@ -1,0 +1,344 @@
+{{template "base" .}}
+
+{{define "head"}}
+<style>
+    .stat-card {
+        transition: transform 0.2s ease-in-out;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .progress {
+        height: 25px;
+    }
+
+    .progress-bar {
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+
+    .subject-row:hover {
+        background-color: rgba(0, 0, 0, 0.02);
+    }
+
+    .table-progress {
+        height: 20px;
+    }
+
+    .pagination-info {
+        font-size: 0.875rem;
+    }
+</style>
+{{end}}
+
+{{define "content"}}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-bar-chart me-2"></i>統計</h1>
+    <a href="/assignments" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>課題一覧に戻る
+    </a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" action="/statistics" class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">科目</label>
+                <select name="subject" class="form-select">
+                    <option value="">すべての科目</option>
+                    {{range .subjects}}
+                    <option value="{{.}}" {{if eq . $.selectedSubject}}selected{{end}}>{{.}}{{if index
+                        $.archivedSubjects .}} (アーカイブ済){{end}}</option>
+                    {{end}}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">登録日（開始）</label>
+                <input type="date" name="from" class="form-control" value="{{.fromDate}}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">登録日（終了）</label>
+                <input type="date" name="to" class="form-control" value="{{.toDate}}">
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="bi bi-filter me-1"></i>絞り込み
+                </button>
+                <a href="/statistics" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-lg me-1"></i>リセット
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="card stat-card bg-primary text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-white-50 mb-1">総課題数</h6>
+                        <h2 class="mb-0">{{.stats.TotalAssignments}}</h2>
+                    </div>
+                    <i class="bi bi-list-task display-4 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card stat-card bg-success text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-white-50 mb-1">完了</h6>
+                        <h2 class="mb-0">{{.stats.CompletedAssignments}}</h2>
+                    </div>
+                    <i class="bi bi-check-circle display-4 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card stat-card bg-warning text-dark h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-dark-50 mb-1">未完了</h6>
+                        <h2 class="mb-0">{{.stats.PendingAssignments}}</h2>
+                    </div>
+                    <i class="bi bi-hourglass-split display-4 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card stat-card bg-danger text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-white-50 mb-1">期限切れ</h6>
+                        <h2 class="mb-0">{{.stats.OverdueAssignments}}</h2>
+                    </div>
+                    <i class="bi bi-exclamation-triangle display-4 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <i class="bi bi-clock-history me-2"></i>期限内完了率
+    </div>
+    <div class="card-body">
+        <div class="row align-items-center">
+            <div class="col-md-3 text-center mb-3 mb-md-0">
+                <h1
+                    class="display-3 mb-0 {{if ge .stats.OnTimeCompletionRate 80.0}}text-success{{else if ge .stats.OnTimeCompletionRate 50.0}}text-warning{{else}}text-danger{{end}}">
+                    {{printf "%.1f" .stats.OnTimeCompletionRate}}%
+                </h1>
+                <small class="text-muted">期限内完了率</small>
+            </div>
+            <div class="col-md-9">
+                <div class="progress">
+                    {{if ge .stats.OnTimeCompletionRate 80.0}}
+                    <div class="progress-bar bg-success" role="progressbar"
+                        style="width: {{.stats.OnTimeCompletionRate}}%">
+                        {{printf "%.1f" .stats.OnTimeCompletionRate}}% 期限内に完了
+                    </div>
+                    {{else if ge .stats.OnTimeCompletionRate 50.0}}
+                    <div class="progress-bar bg-warning" role="progressbar"
+                        style="width: {{.stats.OnTimeCompletionRate}}%">
+                        {{printf "%.1f" .stats.OnTimeCompletionRate}}% 期限内に完了
+                    </div>
+                    {{else}}
+                    <div class="progress-bar bg-danger" role="progressbar"
+                        style="width: {{.stats.OnTimeCompletionRate}}%">
+                        {{printf "%.1f" .stats.OnTimeCompletionRate}}% 期限内に完了
+                    </div>
+                    {{end}}
+                </div>
+                <small class="text-muted mt-2 d-block">完了した課題のうち、期限内に完了した割合を表示しています。</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4" id="activeSubjectsCard">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-collection me-2"></i>アクティブ科目</span>
+        <span class="badge bg-primary" id="activeCount">0</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>科目</th>
+                        <th class="text-center">総数</th>
+                        <th class="text-center">完了</th>
+                        <th class="text-center">未完了</th>
+                        <th class="text-center">期限切れ</th>
+                        <th class="text-center">完了率</th>
+                        <th style="width: 150px;">進捗</th>
+                        <th class="text-center">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="activeSubjectsBody"></tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer d-flex justify-content-between align-items-center">
+        <span class="pagination-info" id="activePageInfo"></span>
+        <nav>
+            <ul class="pagination pagination-sm mb-0" id="activePagination"></ul>
+        </nav>
+    </div>
+</div>
+
+<div class="card" id="archivedSubjectsCard">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-archive me-2"></i>アーカイブ済み科目</span>
+        <span class="badge bg-secondary" id="archivedCount">0</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>科目</th>
+                        <th class="text-center">総数</th>
+                        <th class="text-center">完了</th>
+                        <th class="text-center">未完了</th>
+                        <th class="text-center">期限切れ</th>
+                        <th class="text-center">完了率</th>
+                        <th style="width: 150px;">進捗</th>
+                        <th class="text-center">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="archivedSubjectsBody"></tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer d-flex justify-content-between align-items-center">
+        <span class="pagination-info" id="archivedPageInfo"></span>
+        <nav>
+            <ul class="pagination pagination-sm mb-0" id="archivedPagination"></ul>
+        </nav>
+    </div>
+</div>
+
+<div class="card d-none" id="noSubjectsCard">
+    <div class="card-body text-center py-5">
+        <i class="bi bi-inbox display-1 text-muted"></i>
+        <h4 class="mt-3">科目別の統計データがありません</h4>
+        <p class="text-muted">課題を登録して科目を設定すると、ここに統計が表示されます。</p>
+    </div>
+</div>
+{{end}}
+
+{{define "scripts"}}
+<script id="subjectsData" type="application/json">
+{"csrfToken":"{{.csrfToken}}","subjects":[{{range $i, $s := .stats.Subjects}}{{if $i}},{{end}}{"subject":"{{$s.Subject}}","total":{{$s.Total}},"completed":{{$s.Completed}},"pending":{{$s.Pending}},"overdue":{{$s.Overdue}},"rate":{{$s.OnTimeCompletionRate}},"isArchived":{{if index $.archivedSubjects $s.Subject}}true{{else}}false{{end}}}{{end}}]}
+</script>
+<script>
+    (function () {
+        var data = JSON.parse(document.getElementById('subjectsData').textContent);
+        var csrfToken = data.csrfToken;
+        var subjects = data.subjects;
+        var PAGE_SIZE = 10;
+        var activeSubjects = subjects.filter(function (s) { return !s.isArchived; });
+        var archivedSubjects = subjects.filter(function (s) { return s.isArchived; });
+        var activePage = 1;
+        var archivedPage = 1;
+
+        function getRateClass(rate) {
+            if (rate >= 80) return 'text-success';
+            if (rate >= 50) return 'text-warning';
+            return 'text-danger';
+        }
+
+        function renderProgress(completed, pending, overdue, total) {
+            if (total === 0) return '<div class="progress table-progress"></div>';
+            var cP = (completed / total * 100).toFixed(1);
+            var pP = (pending / total * 100).toFixed(1);
+            var oP = (overdue / total * 100).toFixed(1);
+            return '<div class="progress table-progress">' +
+                '<div class="progress-bar bg-success" style="width:' + cP + '%" title="完了: ' + completed + '"></div>' +
+                '<div class="progress-bar bg-warning" style="width:' + pP + '%" title="未完了: ' + pending + '"></div>' +
+                '<div class="progress-bar bg-danger" style="width:' + oP + '%" title="期限切れ: ' + overdue + '"></div></div>';
+        }
+
+        function renderRow(s, isArchived) {
+            var action = isArchived ?
+                '<form action="/statistics/unarchive-subject" method="POST" class="d-inline"><input type="hidden" name="_csrf" value="' + csrfToken + '"><input type="hidden" name="subject" value="' + s.subject + '"><button type="submit" class="btn btn-sm btn-outline-success" title="復元"><i class="bi bi-arrow-counterclockwise"></i></button></form>' :
+                '<form action="/statistics/archive-subject" method="POST" class="d-inline"><input type="hidden" name="_csrf" value="' + csrfToken + '"><input type="hidden" name="subject" value="' + s.subject + '"><button type="submit" class="btn btn-sm btn-outline-secondary" title="アーカイブ"><i class="bi bi-archive"></i></button></form>';
+            return '<tr class="subject-row">' +
+                '<td><a href="/statistics?subject=' + encodeURIComponent(s.subject) + '" class="text-decoration-none"><i class="bi bi-folder me-1"></i>' + s.subject + '</a></td>' +
+                '<td class="text-center">' + s.total + '</td>' +
+                '<td class="text-center text-success">' + s.completed + '</td>' +
+                '<td class="text-center text-warning">' + s.pending + '</td>' +
+                '<td class="text-center text-danger">' + s.overdue + '</td>' +
+                '<td class="text-center"><span class="' + getRateClass(s.rate) + '">' + s.rate.toFixed(1) + '%</span></td>' +
+                '<td>' + renderProgress(s.completed, s.pending, s.overdue, s.total) + '</td>' +
+                '<td class="text-center">' + action + '</td></tr>';
+        }
+
+        function renderPagination(id, page, total, cb) {
+            var el = document.getElementById(id);
+            el.innerHTML = '';
+            if (total <= 1) return;
+            var prev = document.createElement('li');
+            prev.className = 'page-item' + (page === 1 ? ' disabled' : '');
+            prev.innerHTML = '<a class="page-link" href="#">&laquo;</a>';
+            if (page > 1) prev.onclick = function (e) { e.preventDefault(); cb(page - 1); };
+            el.appendChild(prev);
+            for (var i = 1; i <= total; i++) {
+                var li = document.createElement('li');
+                li.className = 'page-item' + (i === page ? ' active' : '');
+                li.innerHTML = '<a class="page-link" href="#">' + i + '</a>';
+                (function (p) { li.onclick = function (e) { e.preventDefault(); cb(p); }; })(i);
+                el.appendChild(li);
+            }
+            var next = document.createElement('li');
+            next.className = 'page-item' + (page === total ? ' disabled' : '');
+            next.innerHTML = '<a class="page-link" href="#">&raquo;</a>';
+            if (page < total) next.onclick = function (e) { e.preventDefault(); cb(page + 1); };
+            el.appendChild(next);
+        }
+
+        function renderActiveSubjects() {
+            var start = (activePage - 1) * PAGE_SIZE;
+            var end = Math.min(start + PAGE_SIZE, activeSubjects.length);
+            var totalPages = Math.ceil(activeSubjects.length / PAGE_SIZE);
+            document.getElementById('activeSubjectsBody').innerHTML = activeSubjects.slice(start, end).map(function (s) { return renderRow(s, false); }).join('');
+            document.getElementById('activeCount').textContent = activeSubjects.length;
+            document.getElementById('activePageInfo').textContent = activeSubjects.length > 0 ? (start + 1) + '-' + end + ' / ' + activeSubjects.length + ' 件' : '0 件';
+            renderPagination('activePagination', activePage, totalPages, function (p) { activePage = p; renderActiveSubjects(); });
+            document.getElementById('activeSubjectsCard').style.display = activeSubjects.length > 0 ? 'block' : 'none';
+        }
+
+        function renderArchivedSubjects() {
+            var start = (archivedPage - 1) * PAGE_SIZE;
+            var end = Math.min(start + PAGE_SIZE, archivedSubjects.length);
+            var totalPages = Math.ceil(archivedSubjects.length / PAGE_SIZE);
+            document.getElementById('archivedSubjectsBody').innerHTML = archivedSubjects.slice(start, end).map(function (s) { return renderRow(s, true); }).join('');
+            document.getElementById('archivedCount').textContent = archivedSubjects.length;
+            document.getElementById('archivedPageInfo').textContent = archivedSubjects.length > 0 ? (start + 1) + '-' + end + ' / ' + archivedSubjects.length + ' 件' : '0 件';
+            renderPagination('archivedPagination', archivedPage, totalPages, function (p) { archivedPage = p; renderArchivedSubjects(); });
+            document.getElementById('archivedSubjectsCard').style.display = archivedSubjects.length > 0 ? 'block' : 'none';
+        }
+
+        renderActiveSubjects();
+        renderArchivedSubjects();
+        if (activeSubjects.length === 0 && archivedSubjects.length === 0) {
+            document.getElementById('noSubjectsCard').classList.remove('d-none');
+            document.getElementById('activeSubjectsCard').style.display = 'none';
+            document.getElementById('archivedSubjectsCard').style.display = 'none';
+        }
+    })();
+</script>
+{{end}}

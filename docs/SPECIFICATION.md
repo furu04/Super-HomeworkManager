@@ -65,14 +65,37 @@ homework-manager/
 | Title | string | 課題タイトル | Not Null |
 | Description | string | 説明 | - |
 | Subject | string | 教科・科目 | - |
+| Priority | string | 重要度 (`low`, `medium`, `high`) | Default: `medium` |
 | DueDate | time.Time | 提出期限 | Not Null |
 | IsCompleted | bool | 完了フラグ | Default: false |
+| IsArchived | bool | アーカイブフラグ | Default: false |
 | CompletedAt | *time.Time | 完了日時 | Nullable |
+| ReminderEnabled | bool | 1回リマインダー有効 | Default: false |
+| ReminderAt | *time.Time | リマインダー通知日時 | Nullable |
+| ReminderSent | bool | リマインダー送信済み | Default: false |
+| UrgentReminderEnabled | bool | 督促通知有効 | Default: true |
+| LastUrgentReminderSent | *time.Time | 最終督促通知日時 | Nullable |
 | CreatedAt | time.Time | 作成日時 | 自動設定 |
 | UpdatedAt | time.Time | 更新日時 | 自動更新 |
 | DeletedAt | gorm.DeletedAt | 論理削除日時 | ソフトデリート |
 
-### 2.3 APIKey（APIキー）
+### 2.3 UserNotificationSettings（通知設定）
+
+ユーザーの通知設定を管理するモデル。
+
+| フィールド | 型 | 説明 | 制約 |
+|------------|------|------|------|
+| ID | uint | 設定ID | Primary Key |
+| UserID | uint | ユーザーID | Unique, Not Null |
+| TelegramEnabled | bool | Telegram通知 | Default: false |
+| TelegramChatID | string | Telegram Chat ID | - |
+| LineEnabled | bool | LINE通知 | Default: false |
+| LineNotifyToken | string | LINE Notifyトークン | - |
+| CreatedAt | time.Time | 作成日時 | 自動設定 |
+| UpdatedAt | time.Time | 更新日時 | 自動更新 |
+| DeletedAt | gorm.DeletedAt | 論理削除日時 | ソフトデリート |
+
+### 2.4 APIKey（APIキー）
 
 REST API認証用のAPIキーを管理するモデル。
 
@@ -130,18 +153,50 @@ REST API認証用のAPIキーを管理するモデル。
 |------|------|
 | ダッシュボード | 課題の統計情報、本日期限の課題、期限切れ課題、今週期限の課題を表示 |
 | 課題一覧 | フィルタ付き（未完了/完了済み/期限切れ）で課題を一覧表示 |
-| 課題登録 | タイトル、説明、教科、提出期限を入力して新規登録 |
+| 課題登録 | タイトル、説明、教科、重要度、提出期限、通知設定を入力して新規登録 |
 | 課題編集 | 既存の課題情報を編集 |
 | 課題削除 | 課題を論理削除 |
 | 完了トグル | 課題の完了/未完了状態を切り替え |
+| 統計 | 科目別の完了率、期限内完了率等を表示 |
 
-### 4.3 プロフィール機能
+### 4.3 通知機能
+
+#### 4.3.1 1回リマインダー
+
+指定した日時に1回だけ通知を送信する機能。
+
+| 項目 | 説明 |
+|------|------|
+| 設定 | 課題登録・編集画面で通知日時を指定 |
+| 送信 | 指定日時にTelegram/LINEで通知 |
+
+#### 4.3.2 督促通知
+
+課題を完了するまで繰り返し通知を送信する機能。デフォルトで有効。
+
+| 項目 | 説明 |
+|------|------|
+| 開始タイミング | 期限の **3時間前** |
+| 重要度「大」 | **10分**ごとに通知 |
+| 重要度「中」 | **30分**ごとに通知 |
+| 重要度「小」 | **60分**ごとに通知 |
+| 停止条件 | 課題の完了ボタンを押すまで継続 |
+
+#### 4.3.3 通知チャンネル
+
+| チャンネル | 設定方法 |
+|------------|----------|
+| Telegram | config.iniでBot Token設定、プロフィールでChat ID入力 |
+| LINE Notify | プロフィールでアクセストークン入力 |
+
+### 4.4 プロフィール機能
 
 | 機能 | 説明 |
 |------|------|
 | プロフィール表示 | ユーザー情報を表示 |
 | プロフィール更新 | 表示名を変更 |
 | パスワード変更 | 現在のパスワードを確認後、新しいパスワードに変更 |
+| 通知設定 | Telegram/LINE通知の有効化とトークン設定 |
 
 ### 4.4 管理者機能
 
@@ -183,6 +238,9 @@ csrf_secret = your-secure-csrf-secret
 rate_limit_enabled = true
 rate_limit_requests = 100
 rate_limit_window = 60
+
+[notification]
+ telegram_bot_token = your-telegram-bot-token
 ```
 
 ### 5.2 設定項目
@@ -200,6 +258,7 @@ rate_limit_window = 60
 | `security` | `rate_limit_enabled` | レート制限有効化 | `true` |
 | `security` | `rate_limit_requests` | 期間あたりの最大リクエスト数 | `100` |
 | `security` | `rate_limit_window` | 期間（秒） | `60` |
+| `notification` | `telegram_bot_token` | Telegram Bot Token | - |
 
 ### 5.3 環境変数
 
@@ -216,6 +275,7 @@ rate_limit_window = 60
 | `ALLOW_REGISTRATION` | 新規登録許可 (true/false) |
 | `HTTPS` | HTTPSモード (true/false) |
 | `TRUSTED_PROXIES` | 信頼するプロキシのリスト |
+| `TELEGRAM_BOT_TOKEN` | Telegram Bot Token |
 
 ### 5.4 設定の優先順位
 

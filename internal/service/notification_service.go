@@ -14,24 +14,21 @@ import (
 	"homework-manager/internal/models"
 )
 
-// NotificationService handles Telegram and LINE notifications
 type NotificationService struct {
 	telegramBotToken string
 }
 
-// NewNotificationService creates a new notification service
 func NewNotificationService(telegramBotToken string) *NotificationService {
 	return &NotificationService{
 		telegramBotToken: telegramBotToken,
 	}
 }
 
-// GetUserSettings retrieves notification settings for a user
+
 func (s *NotificationService) GetUserSettings(userID uint) (*models.UserNotificationSettings, error) {
 	var settings models.UserNotificationSettings
 	result := database.GetDB().Where("user_id = ?", userID).First(&settings)
 	if result.Error != nil {
-		// If not found, return a new empty settings object
 		if result.RowsAffected == 0 {
 			return &models.UserNotificationSettings{
 				UserID: userID,
@@ -42,7 +39,6 @@ func (s *NotificationService) GetUserSettings(userID uint) (*models.UserNotifica
 	return &settings, nil
 }
 
-// UpdateUserSettings updates notification settings for a user
 func (s *NotificationService) UpdateUserSettings(userID uint, settings *models.UserNotificationSettings) error {
 	settings.UserID = userID
 	
@@ -50,16 +46,12 @@ func (s *NotificationService) UpdateUserSettings(userID uint, settings *models.U
 	result := database.GetDB().Where("user_id = ?", userID).First(&existing)
 	
 	if result.RowsAffected == 0 {
-		// Create new
 		return database.GetDB().Create(settings).Error
 	}
 	
-	// Update existing
 	settings.ID = existing.ID
 	return database.GetDB().Save(settings).Error
 }
-
-// SendTelegramNotification sends a message via Telegram Bot API
 func (s *NotificationService) SendTelegramNotification(chatID, message string) error {
 	if s.telegramBotToken == "" {
 		return fmt.Errorf("telegram bot token is not configured")
@@ -94,7 +86,6 @@ func (s *NotificationService) SendTelegramNotification(chatID, message string) e
 	return nil
 }
 
-// SendLineNotification sends a message via LINE Notify API
 func (s *NotificationService) SendLineNotification(token, message string) error {
 	if token == "" {
 		return fmt.Errorf("LINE Notify token is empty")
@@ -127,7 +118,6 @@ func (s *NotificationService) SendLineNotification(token, message string) error 
 	return nil
 }
 
-// SendAssignmentReminder sends a reminder notification for an assignment
 func (s *NotificationService) SendAssignmentReminder(userID uint, assignment *models.Assignment) error {
 	settings, err := s.GetUserSettings(userID)
 	if err != nil {
@@ -144,14 +134,12 @@ func (s *NotificationService) SendAssignmentReminder(userID uint, assignment *mo
 
 	var errors []string
 
-	// Send to Telegram if enabled
 	if settings.TelegramEnabled && settings.TelegramChatID != "" {
 		if err := s.SendTelegramNotification(settings.TelegramChatID, message); err != nil {
 			errors = append(errors, fmt.Sprintf("Telegram: %v", err))
 		}
 	}
 
-	// Send to LINE if enabled
 	if settings.LineEnabled && settings.LineNotifyToken != "" {
 		if err := s.SendLineNotification(settings.LineNotifyToken, message); err != nil {
 			errors = append(errors, fmt.Sprintf("LINE: %v", err))
@@ -165,7 +153,6 @@ func (s *NotificationService) SendAssignmentReminder(userID uint, assignment *mo
 	return nil
 }
 
-// SendUrgentReminder sends an urgent reminder notification for an assignment
 func (s *NotificationService) SendUrgentReminder(userID uint, assignment *models.Assignment) error {
 	settings, err := s.GetUserSettings(userID)
 	if err != nil {
@@ -203,14 +190,12 @@ func (s *NotificationService) SendUrgentReminder(userID uint, assignment *models
 
 	var errors []string
 
-	// Send to Telegram if enabled
 	if settings.TelegramEnabled && settings.TelegramChatID != "" {
 		if err := s.SendTelegramNotification(settings.TelegramChatID, message); err != nil {
 			errors = append(errors, fmt.Sprintf("Telegram: %v", err))
 		}
 	}
 
-	// Send to LINE if enabled
 	if settings.LineEnabled && settings.LineNotifyToken != "" {
 		if err := s.SendLineNotification(settings.LineNotifyToken, message); err != nil {
 			errors = append(errors, fmt.Sprintf("LINE: %v", err))
@@ -224,8 +209,6 @@ func (s *NotificationService) SendUrgentReminder(userID uint, assignment *models
 	return nil
 }
 
-// getUrgentReminderInterval returns the reminder interval based on priority
-// high=10min, medium=30min, low=60min
 func getUrgentReminderInterval(priority string) time.Duration {
 	switch priority {
 	case "high":
@@ -239,7 +222,6 @@ func getUrgentReminderInterval(priority string) time.Duration {
 	}
 }
 
-// ProcessPendingReminders checks and sends pending one-time reminders
 func (s *NotificationService) ProcessPendingReminders() {
 	now := time.Now()
 	
@@ -260,17 +242,14 @@ func (s *NotificationService) ProcessPendingReminders() {
 			continue
 		}
 		
-		// Mark as sent
 		database.GetDB().Model(&assignment).Update("reminder_sent", true)
 		log.Printf("Sent reminder for assignment %d to user %d", assignment.ID, assignment.UserID)
 	}
 }
 
-// ProcessUrgentReminders checks and sends urgent (repeating) reminders
-// Starts 3 hours before deadline, repeats at interval based on priority
 func (s *NotificationService) ProcessUrgentReminders() {
 	now := time.Now()
-	urgentStartTime := 3 * time.Hour // Start 3 hours before deadline
+	urgentStartTime := 3 * time.Hour
 	
 	var assignments []models.Assignment
 	result := database.GetDB().Where(
@@ -286,12 +265,10 @@ func (s *NotificationService) ProcessUrgentReminders() {
 	for _, assignment := range assignments {
 		timeUntilDue := assignment.DueDate.Sub(now)
 		
-		// Only send if within 3 hours of deadline
 		if timeUntilDue > urgentStartTime {
 			continue
 		}
 		
-		// Check if enough time has passed since last urgent reminder
 		interval := getUrgentReminderInterval(assignment.Priority)
 		
 		if assignment.LastUrgentReminderSent != nil {
@@ -301,20 +278,17 @@ func (s *NotificationService) ProcessUrgentReminders() {
 			}
 		}
 		
-		// Send urgent reminder
 		if err := s.SendUrgentReminder(assignment.UserID, &assignment); err != nil {
 			log.Printf("Error sending urgent reminder for assignment %d: %v", assignment.ID, err)
 			continue
 		}
 		
-		// Update last sent time
 		database.GetDB().Model(&assignment).Update("last_urgent_reminder_sent", now)
 		log.Printf("Sent urgent reminder for assignment %d (priority: %s) to user %d", 
 			assignment.ID, assignment.Priority, assignment.UserID)
 	}
 }
 
-// StartReminderScheduler starts a background goroutine to process reminders
 func (s *NotificationService) StartReminderScheduler() {
 	go func() {
 		ticker := time.NewTicker(1 * time.Minute)

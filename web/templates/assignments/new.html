@@ -55,12 +55,11 @@
                                 重要度により間隔が変わります：大=10分、中=30分、小=1時間
                             </div>
                             <hr class="my-2">
-                            <!-- 1回リマインダー -->
                             <div class="form-check form-switch">
                                 <input class="form-check-input" type="checkbox" id="reminder_enabled"
                                     name="reminder_enabled" onchange="toggleReminderDate(this)">
                                 <label class="form-check-label" for="reminder_enabled">
-                                    1回リマインダー（指定日時に1回通知）
+                                    リマインダー（指定日時に通知）
                                 </label>
                             </div>
                             <div class="mt-2" id="reminder_at_group" style="display: none;">
@@ -70,18 +69,157 @@
                             </div>
                         </div>
                     </div>
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>登録</button>
-                        <a href="/assignments" class="btn btn-outline-secondary">キャンセル</a>
+                    <div class="card bg-light mb-3">
+                        <div class="card-header py-2" style="cursor: pointer;" data-bs-toggle="collapse"
+                            data-bs-target="#recurringSettings">
+                            <h6 class="mb-0"><i class="bi bi-arrow-repeat me-1"></i>繰り返し設定 <i
+                                    class="bi bi-chevron-down float-end"></i></h6>
+                        </div>
+                        <div class="collapse" id="recurringSettings">
+                            <div class="card-body py-2">
+                                <div class="row mb-2">
+                                    <div class="col-6">
+                                        <label for="recurrence_type" class="form-label small">繰り返しタイプ</label>
+                                        <select class="form-select form-select-sm" id="recurrence_type"
+                                            name="recurrence_type" onchange="updateRecurrenceOptions()">
+                                            <option value="none" selected>なし</option>
+                                            <option value="daily">毎日</option>
+                                            <option value="weekly">毎週</option>
+                                            <option value="monthly">毎月</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-6" id="interval_group" style="display: none;">
+                                        <label for="recurrence_interval" class="form-label small">間隔</label>
+                                        <div class="input-group input-group-sm">
+                                            <input type="number" class="form-control" id="recurrence_interval"
+                                                name="recurrence_interval" value="1" min="1" max="12">
+                                            <span class="input-group-text" id="interval_label">週</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="weekday_group" style="display: none;" class="mb-2">
+                                    <label class="form-label small">曜日</label>
+                                    <div class="btn-group btn-group-sm w-100" role="group">
+                                        <input type="radio" class="btn-check" name="recurrence_weekday" id="wd0"
+                                            value="0">
+                                        <label class="btn btn-outline-primary" for="wd0">日</label>
+                                        <input type="radio" class="btn-check" name="recurrence_weekday" id="wd1"
+                                            value="1" checked>
+                                        <label class="btn btn-outline-primary" for="wd1">月</label>
+                                        <input type="radio" class="btn-check" name="recurrence_weekday" id="wd2"
+                                            value="2">
+                                        <label class="btn btn-outline-primary" for="wd2">火</label>
+                                        <input type="radio" class="btn-check" name="recurrence_weekday" id="wd3"
+                                            value="3">
+                                        <label class="btn btn-outline-primary" for="wd3">水</label>
+                                        <input type="radio" class="btn-check" name="recurrence_weekday" id="wd4"
+                                            value="4">
+                                        <label class="btn btn-outline-primary" for="wd4">木</label>
+                                        <input type="radio" class="btn-check" name="recurrence_weekday" id="wd5"
+                                            value="5">
+                                        <label class="btn btn-outline-primary" for="wd5">金</label>
+                                        <input type="radio" class="btn-check" name="recurrence_weekday" id="wd6"
+                                            value="6">
+                                        <label class="btn btn-outline-primary" for="wd6">土</label>
+                                    </div>
+                                </div>
+                                <div id="day_group" style="display: none;" class="mb-2">
+                                    <label for="recurrence_day" class="form-label small">日</label>
+                                    <select class="form-select form-select-sm" id="recurrence_day"
+                                        name="recurrence_day">
+                                        <option value="1">1日</option>
+                                        <option value="2">2日</option>
+                                        <option value="3">3日</option>
+                                        <option value="4">4日</option>
+                                        <option value="5">5日</option>
+                                        <option value="6">6日</option>
+                                        <option value="7">7日</option>
+                                        <option value="8">8日</option>
+                                        <option value="9">9日</option>
+                                        <option value="10">10日</option>
+                                        <option value="11">11日</option>
+                                        <option value="12">12日</option>
+                                        <option value="13">13日</option>
+                                        <option value="14">14日</option>
+                                        <option value="15">15日</option>
+                                        <option value="16">16日</option>
+                                        <option value="17">17日</option>
+                                        <option value="18">18日</option>
+                                        <option value="19">19日</option>
+                                        <option value="20">20日</option>
+                                        <option value="21">21日</option>
+                                        <option value="22">22日</option>
+                                        <option value="23">23日</option>
+                                        <option value="24">24日</option>
+                                        <option value="25">25日</option>
+                                        <option value="26">26日</option>
+                                        <option value="27">27日</option>
+                                        <option value="28">28日</option>
+                                        <option value="29">29日</option>
+                                        <option value="30">30日</option>
+                                        <option value="31">31日</option>
+                                    </select>
+                                </div>
+                                <div id="end_group" style="display: none;">
+                                    <label class="form-label small">終了条件</label>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="end_type" id="end_never"
+                                            value="never" checked>
+                                        <label class="form-check-label small" for="end_never">無期限</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="end_type" id="end_count"
+                                            value="count">
+                                        <label class="form-check-label small" for="end_count">回数</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="end_type" id="end_date"
+                                            value="date">
+                                        <label class="form-check-label small" for="end_date">終了日</label>
+                                    </div>
+                                    <div class="mt-1" id="end_count_group" style="display: none;">
+                                        <input type="number" class="form-control form-control-sm" id="end_count_value"
+                                            name="end_count" value="10" min="1" style="width: 100px;">
+                                    </div>
+                                    <div class="mt-1" id="end_date_group" style="display: none;">
+                                        <input type="date" class="form-control form-control-sm" id="end_date_value"
+                                            name="end_date" style="width: 150px;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </form>
             </div>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>登録</button>
+                <a href="/assignments" class="btn btn-outline-secondary">キャンセル</a>
+            </div>
+            </form>
         </div>
     </div>
+</div>
 </div>
 <script>
     function toggleReminderDate(checkbox) {
         document.getElementById('reminder_at_group').style.display = checkbox.checked ? 'block' : 'none';
     }
+    function updateRecurrenceOptions() {
+        const type = document.getElementById('recurrence_type').value;
+        const isRecurring = type !== 'none';
+        document.getElementById('interval_group').style.display = isRecurring ? 'block' : 'none';
+        document.getElementById('weekday_group').style.display = type === 'weekly' ? 'block' : 'none';
+        document.getElementById('day_group').style.display = type === 'monthly' ? 'block' : 'none';
+        document.getElementById('end_group').style.display = isRecurring ? 'block' : 'none';
+        const label = document.getElementById('interval_label');
+        if (type === 'daily') label.textContent = '日';
+        else if (type === 'weekly') label.textContent = '週';
+        else if (type === 'monthly') label.textContent = '月';
+    }
+    document.querySelectorAll('input[name="end_type"]').forEach(radio => {
+        radio.addEventListener('change', function () {
+            document.getElementById('end_count_group').style.display = this.value === 'count' ? 'block' : 'none';
+            document.getElementById('end_date_group').style.display = this.value === 'date' ? 'block' : 'none';
+        });
+    });
 </script>
 {{end}}

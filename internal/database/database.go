@@ -62,19 +62,13 @@ func Connect(dbConfig config.DatabaseConfig, debug bool) error {
 		return err
 	}
 
-	// Set connection pool settings
 	sqlDB, err := db.DB()
 	if err != nil {
 		return err
 	}
 
-	// SetMaxIdleConns sets the maximum number of connections in the idle connection pool.
 	sqlDB.SetMaxIdleConns(10)
-
-	// SetMaxOpenConns sets the maximum number of open connections to the database.
 	sqlDB.SetMaxOpenConns(100)
-
-	// SetConnMaxLifetime sets the maximum amount of time a connection may be reused.
 	sqlDB.SetConnMaxLifetime(time.Hour)
 
 	DB = db
@@ -85,6 +79,7 @@ func Migrate() error {
 	return DB.AutoMigrate(
 		&models.User{},
 		&models.Assignment{},
+		&models.RecurringAssignment{},
 		&models.APIKey{},
 		&models.UserNotificationSettings{},
 	)

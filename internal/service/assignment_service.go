@@ -209,7 +209,6 @@ func (s *AssignmentService) Update(userID, assignmentID uint, title, description
 	assignment.ReminderEnabled = reminderEnabled
 	assignment.ReminderAt = reminderAt
 	assignment.UrgentReminderEnabled = urgentReminderEnabled
-	// Reset reminder sent flag if reminder settings changed
 	if reminderEnabled && reminderAt != nil {
 		assignment.ReminderSent = false
 	}
@@ -279,7 +278,6 @@ func (s *AssignmentService) GetDashboardStats(userID uint) (*DashboardStats, err
 	}, nil
 }
 
-// StatisticsFilter holds filter parameters for statistics
 type StatisticsFilter struct {
 	Subject         string
 	From            *time.Time
@@ -287,7 +285,6 @@ type StatisticsFilter struct {
 	IncludeArchived bool
 }
 
-// SubjectStats holds statistics for a subject
 type SubjectStats struct {
 	Subject              string  `json:"subject"`
 	Total                int64   `json:"total"`
@@ -298,7 +295,6 @@ type SubjectStats struct {
 	IsArchived           bool    `json:"is_archived,omitempty"`
 }
 
-// StatisticsSummary holds overall statistics
 type StatisticsSummary struct {
 	TotalAssignments     int64          `json:"total_assignments"`
 	CompletedAssignments int64          `json:"completed_assignments"`
@@ -309,7 +305,6 @@ type StatisticsSummary struct {
 	Subjects             []SubjectStats `json:"subjects,omitempty"`
 }
 
-// FilterInfo shows applied filters in response
 type FilterInfo struct {
 	Subject         *string `json:"subject"`
 	From            *string `json:"from"`
@@ -317,9 +312,7 @@ type FilterInfo struct {
 	IncludeArchived bool    `json:"include_archived"`
 }
 
-// GetStatistics returns statistics for a user with optional filters
 func (s *AssignmentService) GetStatistics(userID uint, filter StatisticsFilter) (*StatisticsSummary, error) {
-	// Convert filter to repository filter
 	repoFilter := repository.StatisticsFilter{
 		Subject:         filter.Subject,
 		From:            filter.From,
@@ -327,7 +320,6 @@ func (s *AssignmentService) GetStatistics(userID uint, filter StatisticsFilter) 
 		IncludeArchived: filter.IncludeArchived,
 	}
 
-	// Get overall statistics
 	stats, err := s.assignmentRepo.GetStatistics(userID, repoFilter)
 	if err != nil {
 		return nil, err
@@ -341,7 +333,6 @@ func (s *AssignmentService) GetStatistics(userID uint, filter StatisticsFilter) 
 		OnTimeCompletionRate: stats.OnTimeCompletionRate,
 	}
 
-	// Build filter info
 	filterInfo := &FilterInfo{}
 	hasFilter := false
 	if filter.Subject != "" {
@@ -366,7 +357,6 @@ func (s *AssignmentService) GetStatistics(userID uint, filter StatisticsFilter) 
 		summary.Filter = filterInfo
 	}
 
-	// If no specific subject filter, get per-subject statistics
 	if filter.Subject == "" {
 		subjectStats, err := s.assignmentRepo.GetStatisticsBySubjects(userID, repoFilter)
 		if err != nil {
@@ -388,22 +378,17 @@ func (s *AssignmentService) GetStatistics(userID uint, filter StatisticsFilter) 
 	return summary, nil
 }
 
-// ArchiveSubject archives all assignments for a subject
 func (s *AssignmentService) ArchiveSubject(userID uint, subject string) error {
 	return s.assignmentRepo.ArchiveBySubject(userID, subject)
 }
-
-// UnarchiveSubject unarchives all assignments for a subject
 func (s *AssignmentService) UnarchiveSubject(userID uint, subject string) error {
 	return s.assignmentRepo.UnarchiveBySubject(userID, subject)
 }
 
-// GetSubjectsWithArchived returns subjects optionally including archived
 func (s *AssignmentService) GetSubjectsWithArchived(userID uint, includeArchived bool) ([]string, error) {
 	return s.assignmentRepo.GetSubjectsByUserIDWithArchived(userID, includeArchived)
 }
 
-// GetArchivedSubjects returns archived subjects only
 func (s *AssignmentService) GetArchivedSubjects(userID uint) ([]string, error) {
 	return s.assignmentRepo.GetArchivedSubjects(userID)
 }

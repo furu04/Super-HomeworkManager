@@ -45,6 +45,9 @@ func getFuncMap() template.FuncMap {
 		"multiplyFloat": func(a float64, b float64) float64 {
 			return a * b
 		},
+		"recurringLabel":   service.GetRecurrenceTypeLabel,
+		"endTypeLabel":     service.GetEndTypeLabel,
+		"recurringSummary": service.FormatRecurringSummary,
 	}
 }
 
@@ -59,6 +62,8 @@ func loadTemplates() (*template.Template, error) {
 		pattern string
 		prefix  string
 	}{
+		{"web/templates/auth/*.html", ""},
+		{"web/templates/pages/*.html", ""},
 		{"web/templates/auth/*.html", ""},
 		{"web/templates/pages/*.html", ""},
 		{"web/templates/assignments/*.html", "assignments/"},
@@ -175,7 +180,6 @@ func Setup(cfg *config.Config) *gin.Engine {
 	apiKeyService := service.NewAPIKeyService()
 	notificationService := service.NewNotificationService(cfg.Notification.TelegramBotToken)
 
-	// Start notification reminder scheduler
 	notificationService.StartReminderScheduler()
 
 	authHandler := handler.NewAuthHandler()

@@ -119,7 +119,6 @@ func (h *AssignmentHandler) Create(c *gin.Context) {
 	priority := c.PostForm("priority")
 	dueDateStr := c.PostForm("due_date")
 
-	// Parse reminder settings
 	reminderEnabled := c.PostForm("reminder_enabled") == "on"
 	reminderAtStr := c.PostForm("reminder_at")
 	var reminderAt *time.Time
@@ -151,21 +150,101 @@ func (h *AssignmentHandler) Create(c *gin.Context) {
 		dueDate = dueDate.Add(23*time.Hour + 59*time.Minute)
 	}
 
-	_, err = h.assignmentService.Create(userID, title, description, subject, priority, dueDate, reminderEnabled, reminderAt, urgentReminderEnabled)
-	if err != nil {
-		role, _ := c.Get(middleware.UserRoleKey)
-		name, _ := c.Get(middleware.UserNameKey)
-		RenderHTML(c, http.StatusOK, "assignments/new.html", gin.H{
-			"title":       "課題登録",
-			"error":       "課題の登録に失敗しました",
-			"formTitle":   title,
-			"description": description,
-			"subject":     subject,
-			"priority":    priority,
-			"isAdmin":     role == "admin",
-			"userName":    name,
-		})
-		return
+	recurrenceType := c.PostForm("recurrence_type")
+	if recurrenceType != "" && recurrenceType != "none" {
+
+		recurrenceInterval := 1
+		if v, err := strconv.Atoi(c.PostForm("recurrence_interval")); err == nil && v > 0 {
+			recurrenceInterval = v
+		}
+
+		var recurrenceWeekday *int
+		if wd := c.PostForm("recurrence_weekday"); wd != "" {
+			if v, err := strconv.Atoi(wd); err == nil && v >= 0 && v <= 6 {
+				recurrenceWeekday = &v
+			}
+		}
+
+		var recurrenceDay *int
+		if d := c.PostForm("recurrence_day"); d != "" {
+			if v, err := strconv.Atoi(d); err == nil && v >= 1 && v <= 31 {
+				recurrenceDay = &v
+			}
+		}
+
+		endType := c.PostForm("end_type")
+		if endType == "" {
+			endType = models.EndTypeNever
+		}
+
+		var endCount *int
+		if ec := c.PostForm("end_count"); ec != "" {
+			if v, err := strconv.Atoi(ec); err == nil && v > 0 {
+				endCount = &v
+			}
+		}
+
+		var endDate *time.Time
+		if ed := c.PostForm("end_date"); ed != "" {
+			if v, err := time.ParseInLocation("2006-01-02", ed, time.Local); err == nil {
+				endDate = &v
+			}
+		}
+
+		dueTime := dueDate.Format("15:04")
+
+		recurringService := service.NewRecurringAssignmentService()
+		input := service.CreateRecurringInput{
+			Title:                 title,
+			Description:           description,
+			Subject:               subject,
+			Priority:              priority,
+			RecurrenceType:        recurrenceType,
+			RecurrenceInterval:    recurrenceInterval,
+			RecurrenceWeekday:     recurrenceWeekday,
+			RecurrenceDay:         recurrenceDay,
+			DueTime:               dueTime,
+			EndType:               endType,
+			EndCount:              endCount,
+			EndDate:               endDate,
+			ReminderEnabled:       reminderEnabled,
+			UrgentReminderEnabled: urgentReminderEnabled,
+			FirstDueDate:          dueDate,
+		}
+
+		_, err = recurringService.Create(userID, input)
+		if err != nil {
+			role, _ := c.Get(middleware.UserRoleKey)
+			name, _ := c.Get(middleware.UserNameKey)
+			RenderHTML(c, http.StatusOK, "assignments/new.html", gin.H{
+				"title":       "課題登録",
+				"error":       "繰り返し課題の登録に失敗しました: " + err.Error(),
+				"formTitle":   title,
+				"description": description,
+				"subject":     subject,
+				"priority":    priority,
+				"isAdmin":     role == "admin",
+				"userName":    name,
+			})
+			return
+		}
+	} else {
+		_, err = h.assignmentService.Create(userID, title, description, subject, priority, dueDate, reminderEnabled, reminderAt, urgentReminderEnabled)
+		if err != nil {
+			role, _ := c.Get(middleware.UserRoleKey)
+			name, _ := c.Get(middleware.UserNameKey)
+			RenderHTML(c, http.StatusOK, "assignments/new.html", gin.H{
+				"title":       "課題登録",
+				"error":       "課題の登録に失敗しました",
+				"formTitle":   title,
+				"description": description,
+				"subject":     subject,
+				"priority":    priority,
+				"isAdmin":     role == "admin",
+				"userName":    name,
+			})
+			return
+		}
 	}
 
 	c.Redirect(http.StatusFound, "/assignments")
@@ -202,7 +281,6 @@ func (h *AssignmentHandler) Update(c *gin.Context) {
 	priority := c.PostForm("priority")
 	dueDateStr := c.PostForm("due_date")
 
-	// Parse reminder settings
 	reminderEnabled := c.PostForm("reminder_enabled") == "on"
 	reminderAtStr := c.PostForm("reminder_at")
 	var reminderAt *time.Time
@@ -259,7 +337,6 @@ func (h *AssignmentHandler) Statistics(c *gin.Context) {
 	role, _ := c.Get(middleware.UserRoleKey)
 	name, _ := c.Get(middleware.UserNameKey)
 
-	// Parse filter parameters
 	filter := service.StatisticsFilter{
 		Subject:         c.Query("subject"),
 		IncludeArchived: c.Query("include_archived") == "true",
@@ -268,7 +345,6 @@ func (h *AssignmentHandler) Statistics(c *gin.Context) {
 	fromStr := c.Query("from")
 	toStr := c.Query("to")
 
-	// Parse from date
 	if fromStr != "" {
 		fromDate, err := time.ParseInLocation("2006-01-02", fromStr, time.Local)
 		if err == nil {
@@ -276,7 +352,6 @@ func (h *AssignmentHandler) Statistics(c *gin.Context) {
 		}
 	}
 
-	// Parse to date
 	if toStr != "" {
 		toDate, err := time.ParseInLocation("2006-01-02", toStr, time.Local)
 		if err == nil {
@@ -293,11 +368,9 @@ func (h *AssignmentHandler) Statistics(c *gin.Context) {
 		return
 	}
 
-	// Get available subjects for filter dropdown (exclude archived)
 	subjects, _ := h.assignmentService.GetSubjectsWithArchived(userID, false)
 	archivedSubjects, _ := h.assignmentService.GetArchivedSubjects(userID)
 
-	// Create a map for quick lookup of archived subjects
 	archivedMap := make(map[string]bool)
 	for _, s := range archivedSubjects {
 		archivedMap[s] = true
@@ -338,5 +411,3 @@ func (h *AssignmentHandler) UnarchiveSubject(c *gin.Context) {
 
 	c.Redirect(http.StatusFound, "/statistics?include_archived=true")
 }
-
-

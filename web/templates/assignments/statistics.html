@@ -30,6 +30,20 @@
     .pagination-info {
         font-size: 0.875rem;
     }
+
+    .stats-table {
+        min-width: 700px;
+    }
+
+    .stats-table th,
+    .stats-table td {
+        white-space: nowrap;
+    }
+
+    .stats-table th:first-child,
+    .stats-table td:first-child {
+        min-width: 120px;
+    }
 </style>
 {{end}}
 
@@ -174,7 +188,7 @@
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
-            <table class="table table-hover mb-0">
+            <table class="table table-hover mb-0 stats-table">
                 <thead class="table-light">
                     <tr>
                         <th>科目</th>
@@ -206,7 +220,7 @@
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
-            <table class="table table-hover mb-0">
+            <table class="table table-hover mb-0 stats-table">
                 <thead class="table-light">
                     <tr>
                         <th>科目</th>

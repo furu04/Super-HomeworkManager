@@ -148,11 +148,19 @@ func (r *AssignmentRepository) Search(userID uint, queryStr, priority, filter st
 	}
 
 	now := time.Now()
+	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	endOfDay := startOfDay.AddDate(0, 0, 1)
+	weekLater := startOfDay.AddDate(0, 0, 7)
+
 	switch filter {
 	case "completed":
 		dbQuery = dbQuery.Where("is_completed = ?", true)
 	case "overdue":
 		dbQuery = dbQuery.Where("is_completed = ? AND due_date < ?", false, now)
+	case "due_today":
+		dbQuery = dbQuery.Where("is_completed = ? AND due_date >= ? AND due_date < ?", false, startOfDay, endOfDay)
+	case "due_this_week":
+		dbQuery = dbQuery.Where("is_completed = ? AND due_date >= ? AND due_date < ?", false, startOfDay, weekLater)
 	default: // pending
 		dbQuery = dbQuery.Where("is_completed = ?", false)
 	}
@@ -195,12 +203,12 @@ type StatisticsFilter struct {
 }
 
 type AssignmentStatistics struct {
-	Total                  int64
-	Completed              int64
-	Pending                int64
-	Overdue                int64
-	CompletedOnTime        int64
-	OnTimeCompletionRate   float64
+	Total                int64
+	Completed            int64
+	Pending              int64
+	Overdue              int64
+	CompletedOnTime      int64
+	OnTimeCompletionRate float64
 }
 
 type SubjectStatistics struct {
@@ -217,11 +225,11 @@ func (r *AssignmentRepository) GetStatistics(userID uint, filter StatisticsFilte
 	now := time.Now()
 	stats := &AssignmentStatistics{}
 	baseQuery := r.db.Model(&models.Assignment{}).Where("user_id = ?", userID)
-	
+
 	if filter.Subject != "" {
 		baseQuery = baseQuery.Where("subject = ?", filter.Subject)
 	}
-	
+
 	if filter.From != nil {
 		baseQuery = baseQuery.Where("created_at >= ?", *filter.From)
 	}
@@ -338,4 +346,3 @@ func (r *AssignmentRepository) GetSubjectsByUserIDWithArchived(userID uint, incl
 	err := query.Distinct("subject").Pluck("subject", &subjects).Error
 	return subjects, err
 }
-

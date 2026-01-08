@@ -18,19 +18,43 @@
 <!-- Tabs -->
 <ul class="nav nav-tabs border-0 mb-2" id="assignmentTabs">
     <li class="nav-item">
-        <a class="nav-link py-2 rounded-0 border-0 {{if eq .filter " pending"}}fw-bold border-bottom border-dark
-            border-3{{else}}text-muted{{end}}" href="/assignments?filter=pending&q={{.query}}&priority={{.priority}}"
-            style="{{if eq .filter " pending"}}color: black !important;{{end}}">未完了</a>
+        <a class="nav-link py-2 rounded-0 {{if eq .filter "pending"}}fw-bold border-bottom border-dark border-3
+            text-dark{{else}}border-0 text-muted{{end}}"
+            href="/assignments?filter=pending&q={{.query}}&priority={{.priority}}">
+            未完了
+        </a>
     </li>
+
     <li class="nav-item">
-        <a class="nav-link py-2 rounded-0 border-0 {{if eq .filter " completed"}}fw-bold border-bottom border-dark
-            border-3{{else}}text-muted{{end}}" href="/assignments?filter=completed&q={{.query}}&priority={{.priority}}"
-            style="{{if eq .filter " completed"}}color: black !important;{{end}}">完了済み</a>
+        <a class="nav-link py-2 rounded-0 {{if eq .filter "due_today"}}fw-bold border-bottom border-dark border-3
+            text-dark{{else}}border-0 text-muted{{end}}"
+            href="/assignments?filter=due_today&q={{.query}}&priority={{.priority}}">
+            今日が期限
+        </a>
     </li>
+
     <li class="nav-item">
-        <a class="nav-link py-2 rounded-0 border-0 {{if eq .filter " overdue"}}fw-bold border-bottom border-dark
-            border-3{{else}}text-muted{{end}}" href="/assignments?filter=overdue&q={{.query}}&priority={{.priority}}"
-            style="{{if eq .filter " overdue"}}color: black !important;{{end}}">期限切れ</a>
+        <a class="nav-link py-2 rounded-0 {{if eq .filter "due_this_week"}}fw-bold border-bottom border-dark border-3
+            text-dark{{else}}border-0 text-muted{{end}}"
+            href="/assignments?filter=due_this_week&q={{.query}}&priority={{.priority}}">
+            今週が期限
+        </a>
+    </li>
+
+    <li class="nav-item">
+        <a class="nav-link py-2 rounded-0 {{if eq .filter "completed"}}fw-bold border-bottom border-dark border-3
+            text-dark{{else}}border-0 text-muted{{end}}"
+            href="/assignments?filter=completed&q={{.query}}&priority={{.priority}}">
+            完了済み
+        </a>
+    </li>
+
+    <li class="nav-item">
+        <a class="nav-link py-2 rounded-0 {{if eq .filter "overdue"}}fw-bold border-bottom border-dark border-3
+            text-dark{{else}}border-0 text-muted{{end}}"
+            href="/assignments?filter=overdue&q={{.query}}&priority={{.priority}}">
+            期限切れ
+        </a>
     </li>
 </ul>
 <hr class="mt-0 mb-3 text-muted" style="opacity: 0.1;">

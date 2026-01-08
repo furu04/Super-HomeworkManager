@@ -183,7 +183,7 @@ func Setup(cfg *config.Config) *gin.Engine {
 	notificationService.StartReminderScheduler()
 
 	authHandler := handler.NewAuthHandler()
-	assignmentHandler := handler.NewAssignmentHandler()
+	assignmentHandler := handler.NewAssignmentHandler(notificationService)
 	adminHandler := handler.NewAdminHandler()
 	profileHandler := handler.NewProfileHandler(notificationService)
 	apiHandler := handler.NewAPIHandler()

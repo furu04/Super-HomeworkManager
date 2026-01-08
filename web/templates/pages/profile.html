@@ -112,6 +112,14 @@
                             </div>
                         </div>
                     </div>
+                    <hr class="my-3">
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="notify_on_create" name="notify_on_create"
+                            {{if .notifySettings.NotifyOnCreate}}checked{{end}}>
+                        <label class="form-check-label" for="notify_on_create">
+                            <i class="bi bi-plus-circle me-1"></i>課題追加時に通知する
+                        </label>
+                    </div>
                     <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>通知設定を保存</button>
                 </form>
             </div>

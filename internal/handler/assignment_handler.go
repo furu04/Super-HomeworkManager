@@ -14,12 +14,14 @@ import (
 )
 
 type AssignmentHandler struct {
-	assignmentService *service.AssignmentService
+	assignmentService   *service.AssignmentService
+	notificationService *service.NotificationService
 }
 
-func NewAssignmentHandler() *AssignmentHandler {
+func NewAssignmentHandler(notificationService *service.NotificationService) *AssignmentHandler {
 	return &AssignmentHandler{
-		assignmentService: service.NewAssignmentService(),
+		assignmentService:   service.NewAssignmentService(),
+		notificationService: notificationService,
 	}
 }
 
@@ -229,7 +231,7 @@ func (h *AssignmentHandler) Create(c *gin.Context) {
 			return
 		}
 	} else {
-		_, err = h.assignmentService.Create(userID, title, description, subject, priority, dueDate, reminderEnabled, reminderAt, urgentReminderEnabled)
+		assignment, err := h.assignmentService.Create(userID, title, description, subject, priority, dueDate, reminderEnabled, reminderAt, urgentReminderEnabled)
 		if err != nil {
 			role, _ := c.Get(middleware.UserRoleKey)
 			name, _ := c.Get(middleware.UserNameKey)
@@ -244,6 +246,10 @@ func (h *AssignmentHandler) Create(c *gin.Context) {
 				"userName":    name,
 			})
 			return
+		}
+
+		if h.notificationService != nil {
+			go h.notificationService.SendAssignmentCreatedNotification(userID, assignment)
 		}
 	}
 

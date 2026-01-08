@@ -44,7 +44,62 @@
     .stats-table td:first-child {
         min-width: 120px;
     }
+
+    #shareCard {
+        width: 600px;
+        height: 315px;
+        position: fixed;
+        left: -9999px;
+        top: 0;
+        background: linear-gradient(135deg, #005bea 0%, #00c6fb 100%);
+        padding: 2rem;
+        color: white;
+        border-radius: 12px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    #shareCard .card-title {
+        font-size: 1.5rem;
+        font-weight: bold;
+        opacity: 0.9;
+    }
+
+    #shareCard .rate-display {
+        font-size: 5rem;
+        font-weight: bold;
+        line-height: 1;
+        margin: 1rem 0;
+    }
+
+    #shareCard .stats-row {
+        display: flex;
+        justify-content: space-around;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 1rem;
+        backdrop-filter: blur(5px);
+    }
+
+    #shareCard .stat-item {
+        text-align: center;
+    }
+
+    #shareCard .stat-label {
+        font-size: 0.8rem;
+        opacity: 0.8;
+        display: block;
+        margin-bottom: 0.2rem;
+    }
+
+    #shareCard .stat-value {
+        font-size: 1.4rem;
+        font-weight: bold;
+    }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 {{end}}
 
 {{define "content"}}
@@ -144,8 +199,11 @@
 </div>
 
 <div class="card mb-4">
-    <div class="card-header">
-        <i class="bi bi-clock-history me-2"></i>期限内完了率
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-clock-history me-2"></i>期限内完了率</span>
+        <button class="btn btn-sm btn-outline-primary" onclick="generateShareImage()">
+            <i class="bi bi-share me-1"></i>シェア
+        </button>
     </div>
     <div class="card-body">
         <div class="row align-items-center">
@@ -252,6 +310,69 @@
         <p class="text-muted">課題を登録して科目を設定すると、ここに統計が表示されます。</p>
     </div>
 </div>
+
+<div id="shareCard">
+    <div>
+        <div class="d-flex align-items-center mb-4">
+            <i class="bi bi-journal-check me-2" style="font-size: 1.5rem;"></i>
+            <span class="card-title">Super Homework Manager</span>
+        </div>
+    </div>
+
+    <div class="text-center">
+        <div style="font-size: 1.5rem; font-weight: bold; margin-bottom: 0.5rem; opacity: 0.9;">期限内完了率</div>
+        <div class="rate-display" style="margin-top: 0;">
+            {{printf "%.1f" .stats.OnTimeCompletionRate}}<span style="font-size: 2.5rem;">%</span>
+        </div>
+    </div>
+
+    <div class="stats-row">
+        <div class="stat-item">
+            <span class="stat-label">完了</span>
+            <span class="stat-value">{{.stats.CompletedAssignments}}</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">未完了</span>
+            <span class="stat-value">{{.stats.PendingAssignments}}</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">期限切れ</span>
+            <span class="stat-value">{{.stats.OverdueAssignments}}</span>
+        </div>
+    </div>
+</div>
+
+<!-- Share Modal -->
+<div class="modal fade" id="shareModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-share me-2"></i>シェア</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <div id="sharePreviewContainer" class="mb-3" style="max-width: 100%; overflow: hidden;">
+                </div>
+                <p class="text-muted small mb-3">
+                    画像を保存またはコピーして、SNSに貼り付けてください。<br>
+                    <span class="text-danger"><i class="bi bi-info-circle me-1"></i>ブラウザの制限により、自動で画像は添付されません。</span>
+                </p>
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-primary" onclick="copyImageToClipboard(this)">
+                        <i class="bi bi-clipboard me-2"></i>画像をコピー
+                    </button>
+                    <a id="downloadLink" class="btn btn-outline-secondary" download="stats.png">
+                        <i class="bi bi-download me-2"></i>画像を保存
+                    </a>
+                    <a id="twitterShareBtn" href="#" target="_blank" class="btn btn-dark"
+                        style="background-color: #000;">
+                        <i class="bi bi-twitter-x me-2"></i>Xでポストする
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {{end}}
 
 {{define "scripts"}}
@@ -268,6 +389,88 @@
         var archivedSubjects = subjects.filter(function (s) { return s.isArchived; });
         var activePage = 1;
         var archivedPage = 1;
+
+        // Share Functionality
+        window.generateShareImage = function () {
+            var card = document.getElementById('shareCard');
+            // Ensure card is visible for rendering but off-screen
+            card.style.display = 'flex';
+
+            html2canvas(card, {
+                backgroundColor: null,
+                scale: 2 // High resolution
+            }).then(canvas => {
+                var imgData = canvas.toDataURL('image/png');
+
+                // Set up preview
+                var previewContainer = document.getElementById('sharePreviewContainer');
+                previewContainer.innerHTML = '';
+                var img = document.createElement('img');
+                img.src = imgData;
+                img.style.maxWidth = '100%';
+                img.style.borderRadius = '8px';
+                img.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+                previewContainer.appendChild(img);
+
+                // Set up download link
+                var downloadLink = document.getElementById('downloadLink');
+                downloadLink.href = imgData;
+
+                // Set up Twitter button
+                var text = '私の課題完了状況\n期限内完了率: {{printf "%.1f" .stats.OnTimeCompletionRate}}%\n#HomeworkManager';
+                var twitterBtn = document.getElementById('twitterShareBtn');
+                twitterBtn.href = "https://twitter.com/intent/tweet?text=" + encodeURIComponent(text);
+
+                // Show modal
+                var modal = new bootstrap.Modal(document.getElementById('shareModal'));
+                modal.show();
+            });
+        };
+
+        // Helper to convert Data URL to Blob
+        function dataURLtoBlob(dataurl) {
+            var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
+                bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+            while (n--) {
+                u8arr[n] = bstr.charCodeAt(n);
+            }
+            return new Blob([u8arr], { type: mime });
+        }
+
+        window.copyImageToClipboard = function (btn) {
+            var canvas = document.querySelector('#sharePreviewContainer img');
+            if (!canvas) return;
+
+            if (!navigator.clipboard) {
+                alert('このブラウザまたは環境（非HTTPS/非localhost）では、クリップボードへのコピー機能がサポートされていません。\n「画像を保存」を使用してください。');
+                return;
+            }
+
+            try {
+                var blob = dataURLtoBlob(canvas.src);
+                navigator.clipboard.write([
+                    new ClipboardItem({
+                        'image/png': blob
+                    })
+                ]).then(function () {
+                    var originalText = btn.innerHTML;
+                    btn.innerHTML = '<i class="bi bi-check me-2"></i>コピーしました';
+                    btn.classList.remove('btn-outline-primary');
+                    btn.classList.add('btn-success');
+                    setTimeout(function () {
+                        btn.innerHTML = originalText;
+                        btn.classList.add('btn-outline-primary');
+                        btn.classList.remove('btn-success');
+                    }, 2000);
+                }).catch(function (err) {
+                    console.error('Failed to copy: ', err);
+                    alert('画像のコピーに失敗しました。\nエラー: ' + err.message + '\n「画像を保存」を使用してください。');
+                });
+            } catch (err) {
+                console.error('Failed to create blob: ', err);
+                alert('画像データの生成に失敗しました: ' + err.message);
+            }
+        };
 
         function getRateClass(rate) {
             if (rate >= 80) return 'text-success';

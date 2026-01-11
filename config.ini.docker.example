@@ -1,0 +1,34 @@
+; Homework Manager 設定ファイル (Docker用)
+; docker-compose.yml と一緒に使用してください
+; ローカル実行する場合securityセクションのhttpsをfalseに変更するのを忘れないでください！！
+
+[server]
+port = 8080
+debug = false
+
+[database]
+driver = mysql
+host = db
+port = 3306
+user = homework
+password = homework_password
+name = homework_manager
+
+[session]
+; 本番環境では必ず変更してください
+secret = CHANGE_THIS_TO_A_SECURE_RANDOM_STRING
+
+[auth]
+allow_registration = true
+
+[security]
+https = true
+; こちらも本番環境では必ず変更してください
+csrf_secret = CHANGE_THIS_TO_A_SECURE_RANDOM_STRING
+rate_limit_enabled = true
+rate_limit_requests = 100
+rate_limit_window = 60
+trusted_proxies = 172.16.0.0/12
+
+[notification]
+telegram_bot_token =

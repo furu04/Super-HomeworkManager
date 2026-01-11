@@ -1,11 +1,64 @@
 services:
   app:
     build: .
-    ports:
-      - "8080:8080"
+    container_name: homework-manager
     volumes:
-      - ./homework.db:/app/homework.db
-      - ./config.ini:/app/config.ini
+      - ./config.ini:/app/config.ini:ro
     environment:
       - TZ=Asia/Tokyo
     restart: unless-stopped
+    networks:
+      - internal
+    expose:
+      - "8080"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: mysql:8.0
+    container_name: homework-db
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-homework_manager}
+      MYSQL_USER: ${MYSQL_USER:-homework}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-homework_password}
+      TZ: Asia/Tokyo
+    volumes:
+      - db-data:/var/lib/mysql
+    networks:
+      - internal
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootpassword}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: homework-caddy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    environment:
+      - TZ=Asia/Tokyo
+    restart: unless-stopped
+    networks:
+      - internal
+    depends_on:
+      - app
+
+networks:
+  internal:
+    driver: bridge
+
+volumes:
+  db-data:
+  caddy-data:
+  caddy-config:

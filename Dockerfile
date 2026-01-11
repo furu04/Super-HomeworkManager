@@ -1,11 +1,7 @@
 # Builder stage
-FROM golang:1.24-alpine AS builder
+FROM golang:1.24-trixie AS builder
 
-# Set working directory
 WORKDIR /app
-
-# Install git if needed for fetching dependencies (sometimes needed even with go modules)
-# RUN apk add --no-cache git
 
 # Copy go mod and sum files
 COPY go.mod go.sum ./
@@ -21,12 +17,18 @@ COPY . .
 RUN CGO_ENABLED=0 go build -o server ./cmd/server/main.go
 
 # Runtime stage
-FROM alpine:latest
+FROM debian:trixie-slim
 
 # Install runtime dependencies
-RUN apk add --no-cache ca-certificates tzdata
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    tzdata \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
-# Set working directory
+# Create non-root user
+RUN useradd -r -u 1000 -s /bin/false appuser
+
 WORKDIR /app
 
 # Copy binary from builder
@@ -35,8 +37,21 @@ COPY --from=builder /app/server .
 # Copy web assets (templates, static files)
 COPY --from=builder /app/web ./web
 
-# Expose port (adjust if your app uses a different port)
+# Create data directory for SQLite
+RUN mkdir -p /app/data && chown -R appuser:appuser /app
+
+# Switch to non-root user
+USER appuser
+
+# Expose port
 EXPOSE 8080
+
+# Volume for persistent data
+VOLUME ["/app/data"]
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8080/ || exit 1
 
 # Run the application
 ENTRYPOINT ["./server"]

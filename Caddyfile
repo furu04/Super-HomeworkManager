@@ -1,0 +1,33 @@
+# Caddyfile - Reverse Proxy Configuration
+#
+# 使用方法:
+# 1. example.com を実際のドメインに置き換えてください
+# 2. DNS の A レコードをこのサーバーの IP アドレスに向けてください
+# 3. docker compose up -d で起動すると、自動的に HTTPS 証明書が取得されます
+#
+# ローカル開発用の場合は、以下のように変更してください
+# :80 {
+#     reverse_proxy app:8080
+# }
+
+example.com {
+    reverse_proxy app:8080
+
+    # ログ設定
+    log {
+        output file /data/access.log
+        format json
+    }
+
+    # セキュリティヘッダー
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy strict-origin-when-cross-origin
+        -Server
+    }
+
+    # gzip 圧縮
+    encode gzip
+}

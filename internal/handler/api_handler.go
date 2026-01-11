@@ -13,11 +13,13 @@ import (
 
 type APIHandler struct {
 	assignmentService *service.AssignmentService
+	recurringService  *service.RecurringAssignmentService
 }
 
 func NewAPIHandler() *APIHandler {
 	return &APIHandler{
 		assignmentService: service.NewAssignmentService(),
+		recurringService:  service.NewRecurringAssignmentService(),
 	}
 }
 
@@ -26,17 +28,12 @@ func (h *APIHandler) getUserID(c *gin.Context) uint {
 	return userID.(uint)
 }
 
-// ListAssignments returns all assignments for the authenticated user with pagination
-// GET /api/v1/assignments?filter=pending&page=1&page_size=20
 func (h *APIHandler) ListAssignments(c *gin.Context) {
 	userID := h.getUserID(c)
 	filter := c.Query("filter") // pending, completed, overdue
-
-	// Parse pagination parameters
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
 
-	// Validate pagination parameters
 	if page < 1 {
 		page = 1
 	}
@@ -44,10 +41,9 @@ func (h *APIHandler) ListAssignments(c *gin.Context) {
 		pageSize = 20
 	}
 	if pageSize > 100 {
-		pageSize = 100 // Maximum page size to prevent abuse
+		pageSize = 100
 	}
 
-	// Use paginated methods for filtered queries
 	switch filter {
 	case "completed":
 		result, err := h.assignmentService.GetCompletedByUserPaginated(userID, page, pageSize)
@@ -56,12 +52,12 @@ func (h *APIHandler) ListAssignments(c *gin.Context) {
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{
-			"assignments":   result.Assignments,
-			"count":         len(result.Assignments),
-			"total_count":   result.TotalCount,
-			"total_pages":   result.TotalPages,
-			"current_page":  result.CurrentPage,
-			"page_size":     result.PageSize,
+			"assignments":  result.Assignments,
+			"count":        len(result.Assignments),
+			"total_count":  result.TotalCount,
+			"total_pages":  result.TotalPages,
+			"current_page": result.CurrentPage,
+			"page_size":    result.PageSize,
 		})
 		return
 	case "overdue":
@@ -71,12 +67,12 @@ func (h *APIHandler) ListAssignments(c *gin.Context) {
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{
-			"assignments":   result.Assignments,
-			"count":         len(result.Assignments),
-			"total_count":   result.TotalCount,
-			"total_pages":   result.TotalPages,
-			"current_page":  result.CurrentPage,
-			"page_size":     result.PageSize,
+			"assignments":  result.Assignments,
+			"count":        len(result.Assignments),
+			"total_count":  result.TotalCount,
+			"total_pages":  result.TotalPages,
+			"current_page": result.CurrentPage,
+			"page_size":    result.PageSize,
 		})
 		return
 	case "pending":
@@ -86,23 +82,21 @@ func (h *APIHandler) ListAssignments(c *gin.Context) {
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{
-			"assignments":   result.Assignments,
-			"count":         len(result.Assignments),
-			"total_count":   result.TotalCount,
-			"total_pages":   result.TotalPages,
-			"current_page":  result.CurrentPage,
-			"page_size":     result.PageSize,
+			"assignments":  result.Assignments,
+			"count":        len(result.Assignments),
+			"total_count":  result.TotalCount,
+			"total_pages":  result.TotalPages,
+			"current_page": result.CurrentPage,
+			"page_size":    result.PageSize,
 		})
 		return
 	default:
-		// For "all" filter, use simple pagination without a dedicated method
 		assignments, err := h.assignmentService.GetAllByUser(userID)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch assignments"})
 			return
 		}
 
-		// Manual pagination for all assignments
 		totalCount := len(assignments)
 		totalPages := (totalCount + pageSize - 1) / pageSize
 		start := (page - 1) * pageSize
@@ -115,18 +109,16 @@ func (h *APIHandler) ListAssignments(c *gin.Context) {
 		}
 
 		c.JSON(http.StatusOK, gin.H{
-			"assignments":   assignments[start:end],
-			"count":         end - start,
-			"total_count":   totalCount,
-			"total_pages":   totalPages,
-			"current_page":  page,
-			"page_size":     pageSize,
+			"assignments":  assignments[start:end],
+			"count":        end - start,
+			"total_count":  totalCount,
+			"total_pages":  totalPages,
+			"current_page": page,
+			"page_size":    pageSize,
 		})
 	}
 }
 
-// ListPendingAssignments returns pending assignments with pagination
-// GET /api/v1/assignments/pending?page=1&page_size=20
 func (h *APIHandler) ListPendingAssignments(c *gin.Context) {
 	userID := h.getUserID(c)
 	page, pageSize := h.parsePagination(c)
@@ -140,8 +132,6 @@ func (h *APIHandler) ListPendingAssignments(c *gin.Context) {
 	h.sendPaginatedResponse(c, result)
 }
 
-// ListCompletedAssignments returns completed assignments with pagination
-// GET /api/v1/assignments/completed?page=1&page_size=20
 func (h *APIHandler) ListCompletedAssignments(c *gin.Context) {
 	userID := h.getUserID(c)
 	page, pageSize := h.parsePagination(c)
@@ -155,8 +145,6 @@ func (h *APIHandler) ListCompletedAssignments(c *gin.Context) {
 	h.sendPaginatedResponse(c, result)
 }
 
-// ListOverdueAssignments returns overdue assignments with pagination
-// GET /api/v1/assignments/overdue?page=1&page_size=20
 func (h *APIHandler) ListOverdueAssignments(c *gin.Context) {
 	userID := h.getUserID(c)
 	page, pageSize := h.parsePagination(c)
@@ -170,8 +158,6 @@ func (h *APIHandler) ListOverdueAssignments(c *gin.Context) {
 	h.sendPaginatedResponse(c, result)
 }
 
-// ListDueTodayAssignments returns assignments due today
-// GET /api/v1/assignments/due-today
 func (h *APIHandler) ListDueTodayAssignments(c *gin.Context) {
 	userID := h.getUserID(c)
 
@@ -187,8 +173,6 @@ func (h *APIHandler) ListDueTodayAssignments(c *gin.Context) {
 	})
 }
 
-// ListDueThisWeekAssignments returns assignments due within this week
-// GET /api/v1/assignments/due-this-week
 func (h *APIHandler) ListDueThisWeekAssignments(c *gin.Context) {
 	userID := h.getUserID(c)
 
@@ -204,7 +188,6 @@ func (h *APIHandler) ListDueThisWeekAssignments(c *gin.Context) {
 	})
 }
 
-// parsePagination extracts and validates pagination parameters
 func (h *APIHandler) parsePagination(c *gin.Context) (page int, pageSize int) {
 	page, _ = strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ = strconv.Atoi(c.DefaultQuery("page_size", "20"))
@@ -221,7 +204,6 @@ func (h *APIHandler) parsePagination(c *gin.Context) (page int, pageSize int) {
 	return page, pageSize
 }
 
-// sendPaginatedResponse sends a standard paginated JSON response
 func (h *APIHandler) sendPaginatedResponse(c *gin.Context, result *service.PaginatedResult) {
 	c.JSON(http.StatusOK, gin.H{
 		"assignments":  result.Assignments,
@@ -233,8 +215,6 @@ func (h *APIHandler) sendPaginatedResponse(c *gin.Context, result *service.Pagin
 	})
 }
 
-// GetAssignment returns a single assignment by ID
-// GET /api/v1/assignments/:id
 func (h *APIHandler) GetAssignment(c *gin.Context) {
 	userID := h.getUserID(c)
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
@@ -252,40 +232,121 @@ func (h *APIHandler) GetAssignment(c *gin.Context) {
 	c.JSON(http.StatusOK, assignment)
 }
 
-// CreateAssignmentInput represents the JSON input for creating an assignment
 type CreateAssignmentInput struct {
 	Title       string `json:"title" binding:"required"`
 	Description string `json:"description"`
 	Subject     string `json:"subject"`
-	Priority    string `json:"priority"` // low, medium, high (default: medium)
-	DueDate     string `json:"due_date" binding:"required"` // RFC3339 or 2006-01-02T15:04
+	Priority    string `json:"priority"`
+	DueDate     string `json:"due_date" binding:"required"`
+
+	ReminderEnabled       bool   `json:"reminder_enabled"`
+	ReminderAt            string `json:"reminder_at"`
+	UrgentReminderEnabled *bool  `json:"urgent_reminder_enabled"`
+	Recurrence            struct {
+		Type     string      `json:"type"`
+		Interval int         `json:"interval"`
+		Weekday  interface{} `json:"weekday"`
+		Day      interface{} `json:"day"`
+		Until    struct {
+			Type  string `json:"type"`
+			Count int    `json:"count"`
+			Date  string `json:"date"`
+		} `json:"until"`
+	} `json:"recurrence"`
 }
 
-// CreateAssignment creates a new assignment
-// POST /api/v1/assignments
 func (h *APIHandler) CreateAssignment(c *gin.Context) {
 	userID := h.getUserID(c)
 
 	var input CreateAssignmentInput
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input: title and due_date are required"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input: " + err.Error()})
 		return
 	}
 
-	dueDate, err := time.Parse(time.RFC3339, input.DueDate)
+	dueDate, err := parseDateString(input.DueDate)
 	if err != nil {
-		dueDate, err = time.ParseInLocation("2006-01-02T15:04", input.DueDate, time.Local)
-		if err != nil {
-			dueDate, err = time.ParseInLocation("2006-01-02", input.DueDate, time.Local)
-			if err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid due_date format. Use RFC3339 or 2006-01-02T15:04"})
-				return
-			}
-			dueDate = dueDate.Add(23*time.Hour + 59*time.Minute)
-		}
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid due_date format. Use RFC3339 or 2006-01-02T15:04"})
+		return
 	}
 
-	assignment, err := h.assignmentService.Create(userID, input.Title, input.Description, input.Subject, input.Priority, dueDate, false, nil, true)
+	var reminderAt *time.Time
+	if input.ReminderEnabled && input.ReminderAt != "" {
+		reminderTime, err := parseDateString(input.ReminderAt)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid reminder_at format"})
+			return
+		}
+		reminderAt = &reminderTime
+	}
+
+	urgentReminder := true
+	if input.UrgentReminderEnabled != nil {
+		urgentReminder = *input.UrgentReminderEnabled
+	}
+
+	if input.Recurrence.Type != "" && input.Recurrence.Type != "none" {
+		serviceInput := service.CreateRecurringAssignmentInput{
+			Title:                 input.Title,
+			Description:           input.Description,
+			Subject:               input.Subject,
+			Priority:              input.Priority,
+			FirstDueDate:          dueDate,
+			DueTime:               dueDate.Format("15:04"),
+			RecurrenceType:        input.Recurrence.Type,
+			RecurrenceInterval:    input.Recurrence.Interval,
+			ReminderEnabled:       input.ReminderEnabled,
+			ReminderOffset:        nil,
+			UrgentReminderEnabled: urgentReminder,
+		}
+
+		if serviceInput.RecurrenceInterval < 1 {
+			serviceInput.RecurrenceInterval = 1
+		}
+
+		if input.Recurrence.Weekday != nil {
+			if wd, ok := input.Recurrence.Weekday.(float64); ok {
+				wdInt := int(wd)
+				serviceInput.RecurrenceWeekday = &wdInt
+			}
+		}
+
+		if input.Recurrence.Day != nil {
+			if d, ok := input.Recurrence.Day.(float64); ok {
+				dInt := int(d)
+				serviceInput.RecurrenceDay = &dInt
+			}
+		}
+
+		serviceInput.EndType = input.Recurrence.Until.Type
+		if serviceInput.EndType == "" {
+			serviceInput.EndType = "never"
+		}
+
+		if serviceInput.EndType == "count" {
+			count := input.Recurrence.Until.Count
+			serviceInput.EndCount = &count
+		} else if serviceInput.EndType == "date" && input.Recurrence.Until.Date != "" {
+			endDate, err := parseDateString(input.Recurrence.Until.Date)
+			if err == nil {
+				serviceInput.EndDate = &endDate
+			}
+		}
+
+		recurring, err := h.recurringService.Create(userID, serviceInput)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create recurring assignment: " + err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusCreated, gin.H{
+			"message":              "Recurring assignment created",
+			"recurring_assignment": recurring,
+		})
+		return
+	}
+
+	assignment, err := h.assignmentService.Create(userID, input.Title, input.Description, input.Subject, input.Priority, dueDate, input.ReminderEnabled, reminderAt, urgentReminder)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create assignment"})
 		return
@@ -294,17 +355,17 @@ func (h *APIHandler) CreateAssignment(c *gin.Context) {
 	c.JSON(http.StatusCreated, assignment)
 }
 
-// UpdateAssignmentInput represents the JSON input for updating an assignment
 type UpdateAssignmentInput struct {
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	Subject     string `json:"subject"`
-	Priority    string `json:"priority"`
-	DueDate     string `json:"due_date"`
+	Title                 string `json:"title"`
+	Description           string `json:"description"`
+	Subject               string `json:"subject"`
+	Priority              string `json:"priority"`
+	DueDate               string `json:"due_date"`
+	ReminderEnabled       *bool  `json:"reminder_enabled"`
+	ReminderAt            string `json:"reminder_at"`
+	UrgentReminderEnabled *bool  `json:"urgent_reminder_enabled"`
 }
 
-// UpdateAssignment updates an existing assignment
-// PUT /api/v1/assignments/:id
 func (h *APIHandler) UpdateAssignment(c *gin.Context) {
 	userID := h.getUserID(c)
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
@@ -313,7 +374,6 @@ func (h *APIHandler) UpdateAssignment(c *gin.Context) {
 		return
 	}
 
-	// Get existing assignment
 	existing, err := h.assignmentService.GetByID(userID, uint(id))
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Assignment not found"})
@@ -326,14 +386,21 @@ func (h *APIHandler) UpdateAssignment(c *gin.Context) {
 		return
 	}
 
-	// Use existing values if not provided
 	title := input.Title
 	if title == "" {
 		title = existing.Title
 	}
 
 	description := input.Description
+	if description == "" {
+		description = existing.Description
+	}
+
 	subject := input.Subject
+	if subject == "" {
+		subject = existing.Subject
+	}
+
 	priority := input.Priority
 	if priority == "" {
 		priority = existing.Priority
@@ -341,18 +408,36 @@ func (h *APIHandler) UpdateAssignment(c *gin.Context) {
 
 	dueDate := existing.DueDate
 	if input.DueDate != "" {
-		dueDate, err = time.Parse(time.RFC3339, input.DueDate)
+		parsedDate, err := parseDateString(input.DueDate)
 		if err != nil {
-			dueDate, err = time.ParseInLocation("2006-01-02T15:04", input.DueDate, time.Local)
-			if err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid due_date format"})
-				return
-			}
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid due_date format"})
+			return
 		}
+		dueDate = parsedDate
 	}
 
-	// Preserve existing reminder settings for API updates
-	assignment, err := h.assignmentService.Update(userID, uint(id), title, description, subject, priority, dueDate, existing.ReminderEnabled, existing.ReminderAt, existing.UrgentReminderEnabled)
+	reminderEnabled := existing.ReminderEnabled
+	if input.ReminderEnabled != nil {
+		reminderEnabled = *input.ReminderEnabled
+	}
+
+	reminderAt := existing.ReminderAt
+	if input.ReminderAt != "" {
+		parsedReminderAt, err := parseDateString(input.ReminderAt)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid reminder_at format"})
+			return
+		}
+		reminderAt = &parsedReminderAt
+	} else if input.ReminderEnabled != nil && !*input.ReminderEnabled {
+	}
+
+	urgentReminderEnabled := existing.UrgentReminderEnabled
+	if input.UrgentReminderEnabled != nil {
+		urgentReminderEnabled = *input.UrgentReminderEnabled
+	}
+
+	assignment, err := h.assignmentService.Update(userID, uint(id), title, description, subject, priority, dueDate, reminderEnabled, reminderAt, urgentReminderEnabled)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update assignment"})
 		return
@@ -361,14 +446,32 @@ func (h *APIHandler) UpdateAssignment(c *gin.Context) {
 	c.JSON(http.StatusOK, assignment)
 }
 
-// DeleteAssignment deletes an assignment
-// DELETE /api/v1/assignments/:id
 func (h *APIHandler) DeleteAssignment(c *gin.Context) {
 	userID := h.getUserID(c)
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid assignment ID"})
 		return
+	}
+
+	deleteRecurring := c.Query("delete_recurring") == "true"
+
+	if deleteRecurring {
+
+		assignment, err := h.assignmentService.GetByID(userID, uint(id))
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Assignment not found"})
+			return
+		}
+
+		if assignment.RecurringAssignmentID != nil {
+			if err := h.recurringService.Delete(userID, *assignment.RecurringAssignmentID, false); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete recurring assignment"})
+				return
+			}
+			c.JSON(http.StatusOK, gin.H{"message": "Assignment and recurring settings deleted"})
+			return
+		}
 	}
 
 	if err := h.assignmentService.Delete(userID, uint(id)); err != nil {
@@ -379,8 +482,6 @@ func (h *APIHandler) DeleteAssignment(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Assignment deleted"})
 }
 
-// ToggleAssignment toggles the completion status of an assignment
-// PATCH /api/v1/assignments/:id/toggle
 func (h *APIHandler) ToggleAssignment(c *gin.Context) {
 	userID := h.getUserID(c)
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
@@ -398,18 +499,14 @@ func (h *APIHandler) ToggleAssignment(c *gin.Context) {
 	c.JSON(http.StatusOK, assignment)
 }
 
-// GetStatistics returns statistics for the authenticated user
-// GET /api/v1/statistics?subject=数学&from=2025-01-01&to=2025-12-31&include_archived=true
 func (h *APIHandler) GetStatistics(c *gin.Context) {
 	userID := h.getUserID(c)
 
-	// Parse filter parameters
 	filter := service.StatisticsFilter{
 		Subject:         c.Query("subject"),
 		IncludeArchived: c.Query("include_archived") == "true",
 	}
 
-	// Parse from date
 	if fromStr := c.Query("from"); fromStr != "" {
 		fromDate, err := time.ParseInLocation("2006-01-02", fromStr, time.Local)
 		if err != nil {
@@ -419,7 +516,6 @@ func (h *APIHandler) GetStatistics(c *gin.Context) {
 		filter.From = &fromDate
 	}
 
-	// Parse to date
 	if toStr := c.Query("to"); toStr != "" {
 		toDate, err := time.ParseInLocation("2006-01-02", toStr, time.Local)
 		if err != nil {
@@ -438,3 +534,18 @@ func (h *APIHandler) GetStatistics(c *gin.Context) {
 	c.JSON(http.StatusOK, stats)
 }
 
+func parseDateString(dateStr string) (time.Time, error) {
+	t, err := time.Parse(time.RFC3339, dateStr)
+	if err == nil {
+		return t, nil
+	}
+	t, err = time.ParseInLocation("2006-01-02T15:04", dateStr, time.Local)
+	if err == nil {
+		return t, nil
+	}
+	t, err = time.ParseInLocation("2006-01-02", dateStr, time.Local)
+	if err == nil {
+		return t.Add(23*time.Hour + 59*time.Minute), nil
+	}
+	return time.Time{}, err
+}

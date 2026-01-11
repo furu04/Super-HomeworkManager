@@ -346,3 +346,59 @@ func (r *AssignmentRepository) GetSubjectsByUserIDWithArchived(userID uint, incl
 	err := query.Distinct("subject").Pluck("subject", &subjects).Error
 	return subjects, err
 }
+
+func (r *AssignmentRepository) SearchWithPreload(userID uint, queryStr, priority, filter string, page, pageSize int) ([]models.Assignment, int64, error) {
+	var assignments []models.Assignment
+	var totalCount int64
+
+	dbQuery := r.db.Model(&models.Assignment{}).Where("user_id = ?", userID)
+
+	if queryStr != "" {
+		dbQuery = dbQuery.Where("title LIKE ? OR description LIKE ?", "%"+queryStr+"%", "%"+queryStr+"%")
+	}
+
+	if priority != "" {
+		dbQuery = dbQuery.Where("priority = ?", priority)
+	}
+
+	now := time.Now()
+	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	endOfDay := startOfDay.AddDate(0, 0, 1)
+	weekLater := startOfDay.AddDate(0, 0, 7)
+
+	switch filter {
+	case "completed":
+		dbQuery = dbQuery.Where("is_completed = ?", true)
+	case "overdue":
+		dbQuery = dbQuery.Where("is_completed = ? AND due_date < ?", false, now)
+	case "due_today":
+		dbQuery = dbQuery.Where("is_completed = ? AND due_date >= ? AND due_date < ?", false, startOfDay, endOfDay)
+	case "due_this_week":
+		dbQuery = dbQuery.Where("is_completed = ? AND due_date >= ? AND due_date < ?", false, startOfDay, weekLater)
+	case "recurring":
+		dbQuery = dbQuery.Where("recurring_assignment_id IS NOT NULL")
+	default:
+		dbQuery = dbQuery.Where("is_completed = ?", false)
+	}
+
+	if err := dbQuery.Count(&totalCount).Error; err != nil {
+		return nil, 0, err
+	}
+
+	if filter == "completed" {
+		dbQuery = dbQuery.Order("completed_at DESC")
+	} else {
+		dbQuery = dbQuery.Order("due_date ASC")
+	}
+
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 {
+		pageSize = 10
+	}
+	offset := (page - 1) * pageSize
+
+	err := dbQuery.Preload("RecurringAssignment").Limit(pageSize).Offset(offset).Find(&assignments).Error
+	return assignments, totalCount, err
+}

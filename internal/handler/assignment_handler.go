@@ -16,12 +16,14 @@ import (
 type AssignmentHandler struct {
 	assignmentService   *service.AssignmentService
 	notificationService *service.NotificationService
+	recurringService    *service.RecurringAssignmentService
 }
 
 func NewAssignmentHandler(notificationService *service.NotificationService) *AssignmentHandler {
 	return &AssignmentHandler{
 		assignmentService:   service.NewAssignmentService(),
 		notificationService: notificationService,
+		recurringService:    service.NewRecurringAssignmentService(),
 	}
 }
 
@@ -104,11 +106,14 @@ func (h *AssignmentHandler) Index(c *gin.Context) {
 func (h *AssignmentHandler) New(c *gin.Context) {
 	role, _ := c.Get(middleware.UserRoleKey)
 	name, _ := c.Get(middleware.UserNameKey)
+	now := time.Now()
 
 	RenderHTML(c, http.StatusOK, "assignments/new.html", gin.H{
-		"title":    "課題登録",
-		"isAdmin":  role == "admin",
-		"userName": name,
+		"title":          "課題登録",
+		"isAdmin":        role == "admin",
+		"userName":       name,
+		"currentWeekday": int(now.Weekday()),
+		"currentDay":     now.Day(),
 	})
 }
 
@@ -196,7 +201,7 @@ func (h *AssignmentHandler) Create(c *gin.Context) {
 		dueTime := dueDate.Format("15:04")
 
 		recurringService := service.NewRecurringAssignmentService()
-		input := service.CreateRecurringInput{
+		input := service.CreateRecurringAssignmentInput{
 			Title:                 title,
 			Description:           description,
 			Subject:               subject,
@@ -266,12 +271,18 @@ func (h *AssignmentHandler) Edit(c *gin.Context) {
 		return
 	}
 
+	var recurring *models.RecurringAssignment
+	if assignment.RecurringAssignmentID != nil {
+		recurring, _ = h.recurringService.GetByID(userID, *assignment.RecurringAssignmentID)
+	}
+
 	role, _ := c.Get(middleware.UserRoleKey)
 	name, _ := c.Get(middleware.UserNameKey)
 
 	RenderHTML(c, http.StatusOK, "assignments/edit.html", gin.H{
 		"title":      "課題編集",
 		"assignment": assignment,
+		"recurring":  recurring,
 		"isAdmin":    role == "admin",
 		"userName":   name,
 	})
@@ -332,6 +343,14 @@ func (h *AssignmentHandler) Toggle(c *gin.Context) {
 func (h *AssignmentHandler) Delete(c *gin.Context) {
 	userID := h.getUserID(c)
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
+
+	deleteRecurringStr := c.Query("stop_recurring")
+	if deleteRecurringStr != "" {
+		recurringID, err := strconv.ParseUint(deleteRecurringStr, 10, 32)
+		if err == nil {
+			h.recurringService.Delete(userID, uint(recurringID), false)
+		}
+	}
 
 	h.assignmentService.Delete(userID, uint(id))
 
@@ -416,4 +435,163 @@ func (h *AssignmentHandler) UnarchiveSubject(c *gin.Context) {
 	}
 
 	c.Redirect(http.StatusFound, "/statistics?include_archived=true")
+}
+
+func (h *AssignmentHandler) StopRecurring(c *gin.Context) {
+	userID := h.getUserID(c)
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.Redirect(http.StatusFound, "/assignments")
+		return
+	}
+
+	h.recurringService.SetActive(userID, uint(id), false)
+	c.Redirect(http.StatusFound, "/assignments")
+}
+
+func (h *AssignmentHandler) ResumeRecurring(c *gin.Context) {
+	userID := h.getUserID(c)
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.Redirect(http.StatusFound, "/assignments")
+		return
+	}
+
+	h.recurringService.SetActive(userID, uint(id), true)
+	referer := c.Request.Referer()
+	if referer == "" {
+		referer = "/assignments"
+	}
+	c.Redirect(http.StatusFound, referer)
+}
+
+func (h *AssignmentHandler) ListRecurring(c *gin.Context) {
+	userID := h.getUserID(c)
+	role, _ := c.Get(middleware.UserRoleKey)
+	name, _ := c.Get(middleware.UserNameKey)
+
+	recurrings, err := h.recurringService.GetAllByUser(userID)
+	if err != nil {
+		recurrings = []models.RecurringAssignment{}
+	}
+
+	RenderHTML(c, http.StatusOK, "recurring/index.html", gin.H{
+		"title":      "繰り返し設定一覧",
+		"recurrings": recurrings,
+		"isAdmin":    role == "admin",
+		"userName":   name,
+	})
+}
+
+func (h *AssignmentHandler) EditRecurring(c *gin.Context) {
+	userID := h.getUserID(c)
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.Redirect(http.StatusFound, "/assignments")
+		return
+	}
+
+	recurring, err := h.recurringService.GetByID(userID, uint(id))
+	if err != nil {
+		c.Redirect(http.StatusFound, "/assignments")
+		return
+	}
+
+	role, _ := c.Get(middleware.UserRoleKey)
+	name, _ := c.Get(middleware.UserNameKey)
+
+	RenderHTML(c, http.StatusOK, "recurring/edit.html", gin.H{
+		"title":     "繰り返し課題の編集",
+		"recurring": recurring,
+		"isAdmin":   role == "admin",
+		"userName":  name,
+	})
+}
+
+func (h *AssignmentHandler) UpdateRecurring(c *gin.Context) {
+	userID := h.getUserID(c)
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.Redirect(http.StatusFound, "/assignments")
+		return
+	}
+
+	title := c.PostForm("title")
+	description := c.PostForm("description")
+	subject := c.PostForm("subject")
+	priority := c.PostForm("priority")
+	recurrenceType := c.PostForm("recurrence_type")
+	dueTime := c.PostForm("due_time")
+	editBehavior := c.PostForm("edit_behavior")
+
+	recurrenceInterval := 1
+	if v, err := strconv.Atoi(c.PostForm("recurrence_interval")); err == nil && v > 0 {
+		recurrenceInterval = v
+	}
+
+	var recurrenceWeekday *int
+	if wd := c.PostForm("recurrence_weekday"); wd != "" {
+		if v, err := strconv.Atoi(wd); err == nil && v >= 0 && v <= 6 {
+			recurrenceWeekday = &v
+		}
+	}
+
+	var recurrenceDay *int
+	if d := c.PostForm("recurrence_day"); d != "" {
+		if v, err := strconv.Atoi(d); err == nil && v >= 1 && v <= 31 {
+			recurrenceDay = &v
+		}
+	}
+
+	endType := c.PostForm("end_type")
+	var endCount *int
+	if ec := c.PostForm("end_count"); ec != "" {
+		if v, err := strconv.Atoi(ec); err == nil && v > 0 {
+			endCount = &v
+		}
+	}
+
+	var endDate *time.Time
+	if ed := c.PostForm("end_date"); ed != "" {
+		if v, err := time.ParseInLocation("2006-01-02", ed, time.Local); err == nil {
+			endDate = &v
+		}
+	}
+
+	input := service.UpdateRecurringInput{
+		Title:              &title,
+		Description:        &description,
+		Subject:            &subject,
+		Priority:           &priority,
+		RecurrenceType:     &recurrenceType,
+		RecurrenceInterval: &recurrenceInterval,
+		RecurrenceWeekday:  recurrenceWeekday,
+		RecurrenceDay:      recurrenceDay,
+		DueTime:            &dueTime,
+		EndType:            &endType,
+		EndCount:           endCount,
+		EndDate:            endDate,
+		EditBehavior:       editBehavior,
+	}
+
+	_, err = h.recurringService.Update(userID, uint(id), input)
+	if err != nil {
+		c.Redirect(http.StatusFound, "/recurring/"+c.Param("id")+"/edit")
+		return
+	}
+
+	c.Redirect(http.StatusFound, "/assignments")
+}
+
+func (h *AssignmentHandler) DeleteRecurring(c *gin.Context) {
+	userID := h.getUserID(c)
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.Redirect(http.StatusFound, "/assignments")
+		return
+	}
+
+	h.recurringService.Delete(userID, uint(id), false)
+
+	c.Redirect(http.StatusFound, "/assignments")
 }

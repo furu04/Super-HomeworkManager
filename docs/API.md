@@ -23,14 +23,15 @@ Super Homework Manager REST APIは、課題管理機能をプログラムから�
 ### 認証ヘッダー
 
 ```
-X-API-Key: hm_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+Authorization: Bearer hm_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 ```
 
 ### 認証エラー
 
 | ステータスコード | レスポンス |
 |------------------|------------|
-| 401 Unauthorized | `{"error": "API key required"}` |
+| 401 Unauthorized | `{"error": "Authorization header required"}` |
+| 401 Unauthorized | `{"error": "Invalid authorization format. Use: Bearer <api_key>"}` |
 | 401 Unauthorized | `{"error": "Invalid API key"}` |
 
 ---
@@ -46,6 +47,10 @@ X-API-Key: hm_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 | DELETE | `/api/v1/assignments/:id` | 課題削除 |
 | PATCH | `/api/v1/assignments/:id/toggle` | 完了状態トグル |
 | GET | `/api/v1/statistics` | 統計情報取得 |
+| GET | `/api/v1/recurring` | 繰り返し設定一覧取得 |
+| GET | `/api/v1/recurring/:id` | 繰り返し設定詳細取得 |
+| PUT | `/api/v1/recurring/:id` | 繰り返し設定更新 |
+| DELETE | `/api/v1/recurring/:id` | 繰り返し設定削除 |
 
 ---
 
@@ -88,13 +93,13 @@ GET /api/v1/assignments
 
 ```bash
 # 全件取得
-curl -H "X-API-Key: hm_xxx" http://localhost:8080/api/v1/assignments
+curl -H "Authorization: Bearer hm_xxx" http://localhost:8080/api/v1/assignments
 
 # 未完了のみ取得
-curl -H "X-API-Key: hm_xxx" http://localhost:8080/api/v1/assignments?filter=pending
+curl -H "Authorization: Bearer hm_xxx" http://localhost:8080/api/v1/assignments?filter=pending
 
 # 期限切れのみ取得
-curl -H "X-API-Key: hm_xxx" http://localhost:8080/api/v1/assignments?filter=overdue
+curl -H "Authorization: Bearer hm_xxx" http://localhost:8080/api/v1/assignments?filter=overdue
 ```
 
 ---
@@ -140,7 +145,7 @@ GET /api/v1/assignments/:id
 ### 例
 
 ```bash
-curl -H "X-API-Key: hm_xxx" http://localhost:8080/api/v1/assignments/1
+curl -H "Authorization: Bearer hm_xxx" http://localhost:8080/api/v1/assignments/1
 ```
 
 ---
@@ -159,6 +164,28 @@ POST /api/v1/assignments
 | `description` | string | | 説明 |
 | `subject` | string | | 教科・科目 |
 | `due_date` | string | ✅ | 提出期限（RFC3339 または `YYYY-MM-DDTHH:MM` または `YYYY-MM-DD`） |
+| `reminder_enabled` | boolean | | リマインダーを有効にするか（省略時: false） |
+| `reminder_at` | string | | リマインダー設定時刻（形式はdue_dateと同じ） |
+| `urgent_reminder_enabled` | boolean | | 期限切れ時の督促リマインダーを有効にするか（省略時: true） |
+| `recurrence` | object | | 繰り返し設定（以下参照） |
+
+### Recurrence オブジェクト
+
+| フィールド | 型 | 説明 |
+|------------|------|------|
+| `type` | string | 繰り返しタイプ (`daily`, `weekly`, `monthly`, または空文字で無効) |
+| `interval` | integer | 間隔 (例: 1 = 毎週, 2 = 隔週) |
+| `weekday` | integer | 週次の曜日 (0=日, 1=月, ..., 6=土) |
+| `day` | integer | 月次の日付 (1-31) |
+| `until` | object | 終了条件 |
+
+#### Recurrence.Until オブジェクト
+
+| フィールド | 型 | 説明 |
+|------------|------|------|
+| `type` | string | 終了タイプ (`never`, `count`, `date`) |
+| `count` | integer | 回数指定時の終了回数 |
+| `date` | string | 日付指定時の終了日 |
 
 ### リクエスト例
 
@@ -201,7 +228,7 @@ POST /api/v1/assignments
 
 ```bash
 curl -X POST \
-  -H "X-API-Key: hm_xxx" \
+  -H "Authorization: Bearer hm_xxx" \
   -H "Content-Type: application/json" \
   -d '{"title":"英語エッセイ","due_date":"2025-01-20"}' \
   http://localhost:8080/api/v1/assignments
@@ -231,6 +258,9 @@ PUT /api/v1/assignments/:id
 | `description` | string | 説明 |
 | `subject` | string | 教科・科目 |
 | `due_date` | string | 提出期限 |
+| `reminder_enabled` | boolean | リマインダー有効/無効 |
+| `reminder_at` | string | リマインダー時刻 |
+| `urgent_reminder_enabled` | boolean | 督促リマインダー有効/無効 |
 
 ### リクエスト例
 
@@ -271,7 +301,7 @@ PUT /api/v1/assignments/:id
 
 ```bash
 curl -X PUT \
-  -H "X-API-Key: hm_xxx" \
+  -H "Authorization: Bearer hm_xxx" \
   -H "Content-Type: application/json" \
   -d '{"title":"更新されたタイトル"}' \
   http://localhost:8080/api/v1/assignments/2
@@ -290,6 +320,12 @@ DELETE /api/v1/assignments/:id
 | パラメータ | 型 | 説明 |
 |------------|------|------|
 | `id` | integer | 課題ID |
+
+### クエリパラメータ
+
+| パラメータ | 型 | 説明 |
+|------------|------|------|
+| `delete_recurring` | boolean | `true` の場合、関連する繰り返し設定も削除する |
 
 ### レスポンス
 
@@ -313,7 +349,7 @@ DELETE /api/v1/assignments/:id
 
 ```bash
 curl -X DELETE \
-  -H "X-API-Key: hm_xxx" \
+  -H "Authorization: Bearer hm_xxx" \
   http://localhost:8080/api/v1/assignments/2
 ```
 
@@ -364,7 +400,7 @@ PATCH /api/v1/assignments/:id/toggle
 
 ```bash
 curl -X PATCH \
-  -H "X-API-Key: hm_xxx" \
+  -H "Authorization: Bearer hm_xxx" \
   http://localhost:8080/api/v1/assignments/1/toggle
 ```
 
@@ -444,16 +480,16 @@ GET /api/v1/statistics
 
 ```bash
 # 全体統計
-curl -H "X-API-Key: hm_xxx" http://localhost:8080/api/v1/statistics
+curl -H "Authorization: Bearer hm_xxx" http://localhost:8080/api/v1/statistics
 
 # 科目で絞り込み
-curl -H "X-API-Key: hm_xxx" "http://localhost:8080/api/v1/statistics?subject=数学"
+curl -H "Authorization: Bearer hm_xxx" "http://localhost:8080/api/v1/statistics?subject=数学"
 
 # 日付範囲で絞り込み
-curl -H "X-API-Key: hm_xxx" "http://localhost:8080/api/v1/statistics?from=2025-01-01&to=2025-03-31"
+curl -H "Authorization: Bearer hm_xxx" "http://localhost:8080/api/v1/statistics?from=2025-01-01&to=2025-03-31"
 
 # 科目と日付範囲の組み合わせ
-curl -H "X-API-Key: hm_xxx" "http://localhost:8080/api/v1/statistics?subject=数学&from=2025-01-01&to=2025-03-31"
+curl -H "Authorization: Bearer hm_xxx" "http://localhost:8080/api/v1/statistics?subject=数学&from=2025-01-01&to=2025-03-31"
 ```
 
 ---
@@ -506,3 +542,83 @@ APIは以下の日付形式を受け付けます（優先度順）：
 ```
 
 設定ファイル (`config.ini`) または環境変数で制限値を変更可能です。
+
+---
+
+## 繰り返し設定一覧取得
+
+```
+GET /api/v1/recurring
+```
+
+### レスポンス
+
+**200 OK**
+
+```json
+{
+  "recurring_assignments": [
+    {
+      "id": 1,
+      "user_id": 1,
+      "title": "週次ミーティング",
+      "recurrence_type": "weekly",
+      "interval": 1,
+      "weekday": 1,
+      "is_active": true
+    }
+  ],
+  "count": 1
+}
+```
+
+---
+
+## 繰り返し設定詳細取得
+
+```
+GET /api/v1/recurring/:id
+```
+
+### レスポンス
+
+**200 OK**
+
+---
+
+## 繰り返し設定更新
+
+```
+PUT /api/v1/recurring/:id
+```
+
+### リクエストボディ
+
+各フィールドはオプション。省略時は更新なし。
+
+| フィールド | 型 | 説明 |
+|------------|------|------|
+| `title` | string | タイトル |
+| `is_active` | boolean | `false` で停止、`true` で再開 |
+| `recurrence_type` | string | `daily`, `weekly`, `monthly` |
+| ... | ... | その他の設定フィールド |
+
+### リクエスト例（停止）
+
+```json
+{
+  "is_active": false
+}
+```
+
+---
+
+## 繰り返し設定削除
+
+```
+DELETE /api/v1/recurring/:id
+```
+
+### レスポンス
+
+**200 OK**

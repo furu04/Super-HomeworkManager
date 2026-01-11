@@ -56,6 +56,13 @@
             期限切れ
         </a>
     </li>
+
+    <li class="nav-item">
+        <a class="nav-link py-2 rounded-0 border-0 text-muted"
+            href="/recurring">
+            繰り返し
+        </a>
+    </li>
 </ul>
 <hr class="mt-0 mb-3 text-muted" style="opacity: 0.1;">
 
@@ -92,9 +99,9 @@
                 <thead class="bg-secondary-subtle">
                     <tr>
                         <th style="width: 50px;" class="ps-3 text-center text-dark fw-bold">状態</th>
-                        <th class="text-dark fw-bold">タイトル</th>
                         <th style="width: 120px;" class="text-dark fw-bold">科目</th>
                         <th style="width: 80px;" class="text-dark fw-bold">重要度</th>
+                        <th class="text-dark fw-bold">タイトル</th>
                         <th style="width: 140px;" class="text-dark fw-bold">期限</th>
                         <th style="width: 120px;" class="countdown-col text-dark fw-bold">残り</th>
                         <th style="width: 80px;" class="text-end pe-3 text-dark fw-bold">操作</th>
@@ -125,9 +132,6 @@
                             </form>
                             {{end}}
                         </td>
-                        <td>
-                            <div class="fw-bold text-dark text-truncate" style="max-width: 300px;">{{.Title}}</div>
-                        </td>
                         <td><span class="badge bg-secondary text-white border-0 fw-bold">{{.Subject}}</span></td>
                         <td>
                             {{if eq .Priority "high"}}
@@ -137,6 +141,22 @@
                             {{else}}
                             <span class="badge bg-dark text-white border-0 fw-bold small">低</span>
                             {{end}}
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="fw-bold text-dark text-truncate" style="max-width: 280px;">{{.Title}}</div>
+                                {{if .RecurringAssignmentID}}
+                                <button type="button" class="btn btn-link p-0 ms-2 text-info" data-bs-toggle="modal"
+                                    data-bs-target="#recurringModal" data-recurring-id="{{.RecurringAssignmentID}}"
+                                    data-assignment-id="{{.ID}}"
+                                    data-recurring-title="{{.Title}}"
+                                    data-recurring-type="{{if .RecurringAssignment}}{{.RecurringAssignment.RecurrenceType}}{{else}}unknown{{end}}"
+                                    data-recurring-active="{{if .RecurringAssignment}}{{.RecurringAssignment.IsActive}}{{else}}true{{end}}"
+                                    title="繰り返し課題">
+                                    <i class="fa-solid fa-repeat"></i>
+                                </button>
+                                {{end}}
+                            </div>
                         </td>
                         <td>
                             <div class="small fw-bold text-dark user-select-all">{{.DueDate.Format "2006/01/02 15:04"}}
@@ -154,6 +174,12 @@
                                 <a href="/assignments/{{.ID}}/edit" class="text-primary me-3 text-decoration-none">
                                     <i class="bi bi-pencil-fill"></i>
                                 </a>
+                                {{if .RecurringAssignmentID}}
+                                <button type="button" class="btn btn-link p-0 text-danger text-decoration-none border-0 bg-transparent"
+                                    onclick="showDeleteRecurringModal({{.ID}}, {{.RecurringAssignmentID}})">
+                                    <i class="bi bi-trash-fill"></i>
+                                </button>
+                                {{else}}
                                 <form action="/assignments/{{.ID}}/delete" method="POST" class="d-inline"
                                     onsubmit="return confirm('削除しますか？');">
                                     <input type="hidden" name="_csrf" value="{{$.csrfToken}}">
@@ -162,6 +188,7 @@
                                         <i class="bi bi-trash-fill"></i>
                                     </button>
                                 </form>
+                                {{end}}
                             </div>
                         </td>
                     </tr>
@@ -290,5 +317,126 @@
         const btnText = document.getElementById('countdownBtnText');
         if (btnText) btnText.textContent = 'カウントダウン非表示中';
     }
+
+    // Recurring modal handler - wait for DOM to be ready
+    document.addEventListener('DOMContentLoaded', function() {
+        const recurringModal = document.getElementById('recurringModal');
+        if (recurringModal) {
+            recurringModal.addEventListener('show.bs.modal', function (event) {
+                const button = event.relatedTarget;
+                const id = button.getAttribute('data-recurring-id');
+                const assignmentId = button.getAttribute('data-assignment-id');
+                const title = button.getAttribute('data-recurring-title');
+                const type = button.getAttribute('data-recurring-type');
+                const isActive = button.getAttribute('data-recurring-active') === 'true';
+
+                document.getElementById('recurringModalTitle').textContent = title;
+                document.getElementById('recurringStopForm').action = '/recurring/' + id + '/stop';
+                document.getElementById('recurringEditBtn').href = '/recurring/' + id + '/edit';
+
+                const typeLabels = {
+                    'daily': '毎日',
+                    'weekly': '毎週',
+                    'monthly': '毎月',
+                    'unknown': '(読み込み中...)'
+                };
+                document.getElementById('recurringTypeLabel').textContent = typeLabels[type] || type || '不明';
+
+
+                const statusEl = document.getElementById('recurringStatus');
+                if (isActive) {
+                    statusEl.innerHTML = '<span class="badge bg-success">有効</span>';
+                    document.getElementById('recurringStopBtn').style.display = 'inline-block';
+                } else {
+                    statusEl.innerHTML = '<span class="badge bg-secondary">停止中</span>';
+                    document.getElementById('recurringStopBtn').style.display = 'none';
+                }
+            });
+        }
+    });
+</script>
+
+<!-- Recurring Modal -->
+<div class="modal fade" id="recurringModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fa-solid fa-repeat me-2"></i>繰り返し課題</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <h6 id="recurringModalTitle" class="mb-3 fw-bold"></h6>
+                <table class="table table-sm table-borderless">
+                    <tbody>
+                        <tr>
+                            <th class="text-muted" style="width: 100px;">繰り返し</th>
+                            <td id="recurringTypeLabel">読み込み中...</td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted">状態</th>
+                            <td id="recurringStatus">読み込み中...</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="alert alert-info small mb-0">
+                    <i class="bi bi-info-circle me-1"></i>
+                    繰り返しを停止すると、今後新しい課題は自動作成されなくなります。既存の課題はそのまま残ります。
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                <a id="recurringEditBtn" href="#" class="btn btn-primary">
+                    <i class="bi bi-pencil me-1"></i>編集
+                </a>
+                <form id="recurringStopForm" method="POST" class="d-inline">
+                    <input type="hidden" name="_csrf" value="{{.csrfToken}}">
+                    <button type="submit" id="recurringStopBtn" class="btn btn-danger"
+                        onclick="return confirm('繰り返しを停止しますか？');">
+                        <i class="bi bi-stop-fill me-1"></i>停止
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Recurring Confirmation Modal -->
+<div class="modal fade" id="deleteRecurringModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-trash me-2"></i>繰り返し課題の削除</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>この課題は繰り返し設定に関連付けられています。</p>
+                <p>繰り返し設定も停止しますか？</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <form id="deleteOnlyForm" method="POST" class="d-inline">
+                    <input type="hidden" name="_csrf" value="{{.csrfToken}}">
+                    <button type="submit" class="btn btn-outline-danger">
+                        課題のみ削除
+                    </button>
+                </form>
+                <form id="deleteAndStopForm" method="POST" class="d-inline">
+                    <input type="hidden" name="_csrf" value="{{.csrfToken}}">
+                    <button type="submit" class="btn btn-danger">
+                        削除して繰り返しも削除
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showDeleteRecurringModal(assignmentId, recurringId) {
+    var modal = new bootstrap.Modal(document.getElementById('deleteRecurringModal'));
+    document.getElementById('deleteOnlyForm').action = '/assignments/' + assignmentId + '/delete';
+    document.getElementById('deleteAndStopForm').action = '/assignments/' + assignmentId + '/delete?stop_recurring=' + recurringId;
+    modal.show();
+}
 </script>
 {{end}}

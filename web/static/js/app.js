@@ -1,8 +1,8 @@
 // Homework Manager JavaScript
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Auto-dismiss alerts after 5 seconds
-    const alerts = document.querySelectorAll('.alert:not(.alert-danger)');
+    // Auto-dismiss alerts after 5 seconds (exclude alerts inside modals)
+    const alerts = document.querySelectorAll('.alert:not(.alert-danger):not(.modal .alert)');
     alerts.forEach(function(alert) {
         setTimeout(function() {
             alert.classList.add('fade');

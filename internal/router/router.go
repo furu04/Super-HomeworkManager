@@ -48,6 +48,19 @@ func getFuncMap() template.FuncMap {
 		"recurringLabel":   service.GetRecurrenceTypeLabel,
 		"endTypeLabel":     service.GetEndTypeLabel,
 		"recurringSummary": service.FormatRecurringSummary,
+		"derefInt": func(i *int) int {
+			if i == nil {
+				return 0
+			}
+			return *i
+		},
+		"seq": func(start, end int) []int {
+			var result []int
+			for i := start; i <= end; i++ {
+				result = append(result, i)
+			}
+			return result
+		},
 	}
 }
 
@@ -67,6 +80,7 @@ func loadTemplates() (*template.Template, error) {
 		{"web/templates/auth/*.html", ""},
 		{"web/templates/pages/*.html", ""},
 		{"web/templates/assignments/*.html", "assignments/"},
+		{"web/templates/recurring/*.html", "recurring/"},
 		{"web/templates/admin/*.html", "admin/"},
 	}
 
@@ -187,6 +201,7 @@ func Setup(cfg *config.Config) *gin.Engine {
 	adminHandler := handler.NewAdminHandler()
 	profileHandler := handler.NewProfileHandler(notificationService)
 	apiHandler := handler.NewAPIHandler()
+	apiRecurringHandler := handler.NewAPIRecurringHandler()
 
 	guest := r.Group("/")
 	guest.Use(middleware.GuestOnly())
@@ -226,6 +241,13 @@ func Setup(cfg *config.Config) *gin.Engine {
 		auth.POST("/statistics/archive-subject", assignmentHandler.ArchiveSubject)
 		auth.POST("/statistics/unarchive-subject", assignmentHandler.UnarchiveSubject)
 
+		auth.POST("/recurring/:id/stop", assignmentHandler.StopRecurring)
+		auth.POST("/recurring/:id/resume", assignmentHandler.ResumeRecurring)
+		auth.POST("/recurring/:id/delete", assignmentHandler.DeleteRecurring)
+		auth.GET("/recurring", assignmentHandler.ListRecurring)
+		auth.GET("/recurring/:id/edit", assignmentHandler.EditRecurring)
+		auth.POST("/recurring/:id", assignmentHandler.UpdateRecurring)
+
 		auth.GET("/profile", profileHandler.Show)
 		auth.POST("/profile", profileHandler.Update)
 		auth.POST("/profile/password", profileHandler.ChangePassword)
@@ -258,7 +280,13 @@ func Setup(cfg *config.Config) *gin.Engine {
 		api.PUT("/assignments/:id", apiHandler.UpdateAssignment)
 		api.DELETE("/assignments/:id", apiHandler.DeleteAssignment)
 		api.PATCH("/assignments/:id/toggle", apiHandler.ToggleAssignment)
+
 		api.GET("/statistics", apiHandler.GetStatistics)
+
+		api.GET("/recurring", apiRecurringHandler.ListRecurring)
+		api.GET("/recurring/:id", apiRecurringHandler.GetRecurring)
+		api.PUT("/recurring/:id", apiRecurringHandler.UpdateRecurring)
+		api.DELETE("/recurring/:id", apiRecurringHandler.DeleteRecurring)
 	}
 
 	return r

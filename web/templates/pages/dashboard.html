@@ -84,7 +84,7 @@
         <i class="bi bi-exclamation-octagon-fill me-2"></i>
         <span id="urgentMessage"></span>
         <div class="urgent-countdown mt-1">
-            <i class="bi bi-stopwatch"></i> あと <span id="urgentCountdown"></span>
+            <i class="bi bi-stopwatch"></i> <span id="urgentCountdown"></span>
         </div>
     </div>
 </div>
@@ -164,9 +164,9 @@
                 <li class="list-group-item d-flex justify-content-between align-items-center"
                     data-priority="{{.Priority}}" data-due="{{.DueDate.UnixMilli}}">
                     <div>
+                        {{if .Subject}}<span class="badge bg-secondary me-1">{{.Subject}}</span>{{end}}
+                        {{if eq .Priority "high"}}<span class="badge bg-danger me-1">重要</span>{{end}}
                         <strong>{{.Title}}</strong>
-                        {{if eq .Priority "high"}}<span class="badge bg-danger ms-1">重要</span>{{end}}
-                        {{if .Subject}}<span class="badge bg-secondary ms-2">{{.Subject}}</span>{{end}}
                         <br><small class="text-danger">{{formatDateTime .DueDate}}</small>
                     </div>
                     <form action="/assignments/{{.ID}}/toggle" method="POST"><input type="hidden" name="_csrf"
@@ -187,9 +187,9 @@
                 <li class="list-group-item d-flex justify-content-between align-items-center"
                     data-priority="{{.Priority}}" data-due="{{.DueDate.UnixMilli}}">
                     <div>
+                        {{if .Subject}}<span class="badge bg-secondary me-1">{{.Subject}}</span>{{end}}
+                        {{if eq .Priority "high"}}<span class="badge bg-danger me-1">重要</span>{{end}}
                         <strong>{{.Title}}</strong>
-                        {{if eq .Priority "high"}}<span class="badge bg-danger ms-1">重要</span>{{end}}
-                        {{if .Subject}}<span class="badge bg-secondary ms-2">{{.Subject}}</span>{{end}}
                         <br><small class="text-muted">{{formatDateTime .DueDate}}</small>
                     </div>
                     <form action="/assignments/{{.ID}}/toggle" method="POST"><input type="hidden" name="_csrf"
@@ -210,9 +210,9 @@
                 <li class="list-group-item d-flex justify-content-between align-items-center"
                     data-priority="{{.Priority}}" data-due="{{.DueDate.UnixMilli}}">
                     <div>
+                        {{if .Subject}}<span class="badge bg-secondary me-1">{{.Subject}}</span>{{end}}
+                        {{if eq .Priority "high"}}<span class="badge bg-danger me-1">重要</span>{{end}}
                         <strong>{{.Title}}</strong>
-                        {{if eq .Priority "high"}}<span class="badge bg-danger ms-1">重要</span>{{end}}
-                        {{if .Subject}}<span class="badge bg-secondary ms-2">{{.Subject}}</span>{{end}}
                         <br><small class="text-muted">{{formatDateTime .DueDate}}</small>
                     </div>
                     <form action="/assignments/{{.ID}}/toggle" method="POST"><input type="hidden" name="_csrf"
@@ -306,10 +306,10 @@
             var mins = Math.floor((diff % 3600000) / 60000);
             var secs = Math.floor((diff % 60000) / 1000);
 
-            var text = '';
-            if (days > 0) text = days + '日 ' + hours + '時間 ' + mins + '分 ' + secs + '秒';
-            else if (hours > 0) text = hours + '時間 ' + mins + '分 ' + secs + '秒';
-            else text = mins + '分 ' + secs + '秒';
+            var text = 'あと ';
+            if (days > 0) text += days + '日 ' + hours + '時間 ' + mins + '分 ' + secs + '秒';
+            else if (hours > 0) text += hours + '時間 ' + mins + '分 ' + secs + '秒';
+            else text += mins + '分 ' + secs + '秒';
 
             countdown.textContent = text;
         }

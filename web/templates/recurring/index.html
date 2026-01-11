@@ -1,0 +1,68 @@
+{{template "base" .}}
+
+{{define "content"}}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="d-flex align-items-center">
+        <h4 class="mb-0 fw-bold"><i class="bi bi-arrow-repeat me-2"></i>繰り返し設定一覧</h4>
+    </div>
+    <a href="/assignments" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>課題一覧に戻る
+    </a>
+</div>
+
+<div class="card shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-3">タイトル</th>
+                    <th>科目</th>
+                    <th>繰り返し</th>
+                    <th>状態</th>
+                    <th class="text-end pe-3">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .recurrings}}
+                <tr>
+                    <td class="ps-3">
+                        <div class="fw-bold">{{.Title}}</div>
+                        {{if .Description}}
+                        <div class="text-muted small text-truncate" style="max-width: 200px;">{{.Description}}</div>
+                        {{end}}
+                    </td>
+                    <td>
+                        {{if .Subject}}
+                        <span class="badge bg-secondary">{{.Subject}}</span>
+                        {{else}}
+                        <span class="text-muted">-</span>
+                        {{end}}
+                    </td>
+                    <td>
+                        <span class="text-dark">{{recurringSummary .}}</span>
+                    </td>
+                    <td>
+                        {{if .IsActive}}
+                        <span class="badge bg-success">有効</span>
+                        {{else}}
+                        <span class="badge bg-secondary">停止中</span>
+                        {{end}}
+                    </td>
+                    <td class="text-end pe-3">
+                        <a href="/recurring/{{.ID}}/edit" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                    </td>
+                </tr>
+                {{else}}
+                <tr>
+                    <td colspan="5" class="text-center py-4 text-muted">
+                        繰り返し設定がありません
+                    </td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </div>
+</div>
+{{end}}

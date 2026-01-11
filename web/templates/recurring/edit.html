@@ -1,0 +1,148 @@
+{{template "base" .}}
+
+{{define "content"}}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card shadow">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-arrow-repeat me-2"></i>繰り返し課題の編集</h5>
+            </div>
+            <div class="card-body">
+                {{if .error}}<div class="alert alert-danger">{{.error}}</div>{{end}}
+                <form method="POST" action="/recurring/{{.recurring.ID}}">
+                    {{.csrfField}}
+                    <div class="mb-3">
+                        <label for="title" class="form-label">タイトル <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="title" name="title" value="{{.recurring.Title}}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="subject" class="form-label">科目</label>
+                        <input type="text" class="form-control" id="subject" name="subject" value="{{.recurring.Subject}}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="priority" class="form-label">重要度</label>
+                        <select class="form-select" id="priority" name="priority">
+                            <option value="low" {{if eq .recurring.Priority "low"}}selected{{end}}>小</option>
+                            <option value="medium" {{if eq .recurring.Priority "medium"}}selected{{end}}>中</option>
+                            <option value="high" {{if eq .recurring.Priority "high"}}selected{{end}}>大</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">説明</label>
+                        <textarea class="form-control" id="description" name="description" rows="3">{{.recurring.Description}}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="due_time" class="form-label">時刻</label>
+                        <input type="time" class="form-control" id="due_time" name="due_time" value="{{.recurring.DueTime}}">
+                    </div>
+                    
+                    <div class="card bg-light mb-3">
+                        <div class="card-body py-3">
+                            <h6 class="mb-3"><i class="bi bi-arrow-repeat me-1"></i>繰り返し設定</h6>
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <label for="recurrence_type" class="form-label small">繰り返しタイプ</label>
+                                    <select class="form-select form-select-sm" id="recurrence_type" name="recurrence_type" onchange="updateRecurrenceOptions()">
+                                        <option value="daily" {{if eq .recurring.RecurrenceType "daily"}}selected{{end}}>毎日</option>
+                                        <option value="weekly" {{if eq .recurring.RecurrenceType "weekly"}}selected{{end}}>毎週</option>
+                                        <option value="monthly" {{if eq .recurring.RecurrenceType "monthly"}}selected{{end}}>毎月</option>
+                                    </select>
+                                </div>
+                                <div class="col-6">
+                                    <label for="recurrence_interval" class="form-label small">間隔</label>
+                                    <div class="input-group input-group-sm">
+                                        <input type="number" class="form-control" id="recurrence_interval" name="recurrence_interval" value="{{.recurring.RecurrenceInterval}}" min="1" max="12">
+                                        <span class="input-group-text" id="interval_label">{{if eq .recurring.RecurrenceType "daily"}}日{{else if eq .recurring.RecurrenceType "weekly"}}週{{else}}月{{end}}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="weekday_group" class="mb-3">
+                                <label class="form-label small">曜日</label>
+                                <div class="btn-group btn-group-sm w-100" role="group">
+                                    <input type="radio" class="btn-check" name="recurrence_weekday" id="wd0" value="0" {{if .recurring.RecurrenceWeekday}}{{if eq (derefInt .recurring.RecurrenceWeekday) 0}}checked{{end}}{{end}}>
+                                    <label class="btn btn-outline-primary" for="wd0">日</label>
+                                    <input type="radio" class="btn-check" name="recurrence_weekday" id="wd1" value="1" {{if .recurring.RecurrenceWeekday}}{{if eq (derefInt .recurring.RecurrenceWeekday) 1}}checked{{end}}{{end}}>
+                                    <label class="btn btn-outline-primary" for="wd1">月</label>
+                                    <input type="radio" class="btn-check" name="recurrence_weekday" id="wd2" value="2" {{if .recurring.RecurrenceWeekday}}{{if eq (derefInt .recurring.RecurrenceWeekday) 2}}checked{{end}}{{end}}>
+                                    <label class="btn btn-outline-primary" for="wd2">火</label>
+                                    <input type="radio" class="btn-check" name="recurrence_weekday" id="wd3" value="3" {{if .recurring.RecurrenceWeekday}}{{if eq (derefInt .recurring.RecurrenceWeekday) 3}}checked{{end}}{{end}}>
+                                    <label class="btn btn-outline-primary" for="wd3">水</label>
+                                    <input type="radio" class="btn-check" name="recurrence_weekday" id="wd4" value="4" {{if .recurring.RecurrenceWeekday}}{{if eq (derefInt .recurring.RecurrenceWeekday) 4}}checked{{end}}{{end}}>
+                                    <label class="btn btn-outline-primary" for="wd4">木</label>
+                                    <input type="radio" class="btn-check" name="recurrence_weekday" id="wd5" value="5" {{if .recurring.RecurrenceWeekday}}{{if eq (derefInt .recurring.RecurrenceWeekday) 5}}checked{{end}}{{end}}>
+                                    <label class="btn btn-outline-primary" for="wd5">金</label>
+                                    <input type="radio" class="btn-check" name="recurrence_weekday" id="wd6" value="6" {{if .recurring.RecurrenceWeekday}}{{if eq (derefInt .recurring.RecurrenceWeekday) 6}}checked{{end}}{{end}}>
+                                    <label class="btn btn-outline-primary" for="wd6">土</label>
+                                </div>
+                            </div>
+                            <div id="day_group" class="mb-3">
+                                <label for="recurrence_day" class="form-label small">日</label>
+                                <select class="form-select form-select-sm" id="recurrence_day" name="recurrence_day">
+                                    {{range $i := seq 1 31}}
+                                    <option value="{{$i}}" {{if $.recurring.RecurrenceDay}}{{if eq (derefInt $.recurring.RecurrenceDay) $i}}selected{{end}}{{end}}>{{$i}}日</option>
+                                    {{end}}
+                                </select>
+                            </div>
+                            
+                            <hr class="my-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="small text-muted">状態:</span>
+                                {{if .recurring.IsActive}}
+                                <span class="badge bg-success">有効</span>
+                                {{else}}
+                                <span class="badge bg-secondary">停止中</span>
+                                {{end}}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>更新</button>
+                        <a href="/assignments" class="btn btn-outline-secondary">キャンセル</a>
+                        {{if .recurring.IsActive}}
+                        <button type="button" class="btn btn-outline-danger" onclick="if(confirm('繰り返しを停止しますか？今後新しい課題は自動作成されなくなります。')) document.getElementById('stopForm').submit();">
+                            <i class="bi bi-stop-fill me-1"></i>停止
+                        </button>
+                        {{else}}
+                        <button type="button" class="btn btn-outline-success" onclick="document.getElementById('resumeForm').submit();">
+                            <i class="bi bi-play-fill me-1"></i>再開
+                        </button>
+                        {{end}}
+                        <button type="button" class="btn btn-outline-danger ms-auto" onclick="if(confirm('この繰り返し設定を削除しますか？この操作は取り消せません。')) document.getElementById('deleteForm').submit();">
+                            <i class="bi bi-trash me-1"></i>削除
+                        </button>
+                    </div>
+                </form>
+                
+                {{if .recurring.IsActive}}
+                <form id="stopForm" action="/recurring/{{.recurring.ID}}/stop" method="POST" class="d-none">
+                    {{.csrfField}}
+                </form>
+                {{else}}
+                <form id="resumeForm" action="/recurring/{{.recurring.ID}}/resume" method="POST" class="d-none">
+                    {{.csrfField}}
+                </form>
+                {{end}}
+                <form id="deleteForm" action="/recurring/{{.recurring.ID}}/delete" method="POST" class="d-none">
+                    {{.csrfField}}
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function updateRecurrenceOptions() {
+        var type = document.getElementById('recurrence_type').value;
+        document.getElementById('weekday_group').style.display = type === 'weekly' ? 'block' : 'none';
+        document.getElementById('day_group').style.display = type === 'monthly' ? 'block' : 'none';
+        var label = document.getElementById('interval_label');
+        if (type === 'daily') label.textContent = '日';
+        else if (type === 'weekly') label.textContent = '週';
+        else if (type === 'monthly') label.textContent = '月';
+    }
+    document.addEventListener('DOMContentLoaded', function() {
+        updateRecurrenceOptions();
+    });
+</script>
+{{end}}

@@ -79,7 +79,33 @@ homework-manager/
 | UpdatedAt | time.Time | 更新日時 | 自動更新 |
 | DeletedAt | gorm.DeletedAt | 論理削除日時 | ソフトデリート |
 
-### 2.3 UserNotificationSettings（通知設定）
+
+### 2.3 RecurringAssignment（繰り返し課題）
+
+繰り返し課題の設定を管理するモデル。
+
+| フィールド | 型 | 説明 | 制約 |
+|------------|------|------|------|
+| ID | uint | 設定ID | Primary Key |
+| UserID | uint | 所有ユーザーID | Not Null, Index |
+| Title | string | 課題タイトル | Not Null |
+| Description | string | 説明 | - |
+| Subject | string | 教科・科目 | - |
+| Priority | string | 重要度 | Default: `medium` |
+| RecurrenceType | string | 繰り返しタイプ (`daily`, `weekly`, `monthly`) | Not Null |
+| RecurrenceInterval | int | 繰り返し間隔 | Default: 1 |
+| RecurrenceWeekday | *int | 曜日 (0-6, 日-土) | Nullable |
+| RecurrenceDay | *int | 日 (1-31) | Nullable |
+| DueTime | string | 締切時刻 (HH:MM) | Not Null |
+| EndType | string | 終了条件 (`never`, `count`, `date`) | Default: `never` |
+| EndCount | *int | 終了回数 | Nullable |
+| EndDate | *time.Time | 終了日 | Nullable |
+| IsActive | bool | 有効フラグ | Default: true |
+| CreatedAt | time.Time | 作成日時 | 自動設定 |
+| UpdatedAt | time.Time | 更新日時 | 自動更新 |
+| DeletedAt | gorm.DeletedAt | 論理削除日時 | ソフトデリート |
+
+### 2.4 UserNotificationSettings（通知設定）
 
 ユーザーの通知設定を管理するモデル。
 
@@ -95,7 +121,7 @@ homework-manager/
 | UpdatedAt | time.Time | 更新日時 | 自動更新 |
 | DeletedAt | gorm.DeletedAt | 論理削除日時 | ソフトデリート |
 
-### 2.4 APIKey（APIキー）
+### 2.5 APIKey（APIキー）
 
 REST API認証用のAPIキーを管理するモデル。
 
@@ -123,7 +149,7 @@ REST API認証用のAPIキーを管理するモデル。
 
 ### 3.2 API認証
 
-- **APIキー認証**: `X-API-Key` ヘッダーで認証
+- **APIキー認証**: `Authorization: Bearer <API_KEY>` ヘッダーで認証
 - **キー形式**: `hm_` プレフィックス + 32文字のランダム文字列
 - **ハッシュ保存**: SHA-256でハッシュ化して保存
 
@@ -155,13 +181,26 @@ REST API認証用のAPIキーを管理するモデル。
 | 課題一覧 | フィルタ付き（未完了/今日が期限/今週が期限/完了済み/期限切れ）で課題を一覧表示 |
 | 課題登録 | タイトル、説明、教科、重要度、提出期限、通知設定を入力して新規登録 |
 | 課題編集 | 既存の課題情報を編集 |
-| 課題削除 | 課題を論理削除 |
+| 課題削除 | 課題を論理削除（繰り返し課題に関連する場合、繰り返し設定ごと削除するか選択可能） |
 | 完了トグル | 課題の完了/未完了状態を切り替え |
 | 統計 | 科目別の完了率、期限内完了率等を表示 |
 
-### 4.3 通知機能
+### 4.3 繰り返し課題機能
 
-#### 4.3.1 1回リマインダー
+周期的に発生する課題を自動生成する機能。
+
+| 機能 | 説明 |
+|------|------|
+| 繰り返し作成 | 課題登録時に繰り返し条件（毎日/毎週/毎月）を設定して作成 |
+| 自動生成 | 未完了の課題がなくなったタイミングで、設定に基づき次回の課題を自動生成 |
+| 繰り返し一覧 | 登録されている繰り返し設定を一覧表示 (`/recurring`) |
+| 繰り返し編集 | 繰り返し設定の内容（タイトル、条件、時刻など）を編集 |
+| 停止・再開 | 繰り返し設定を一時停止、または停止中の設定を再開 |
+| 繰り返し削除 | 繰り返し設定を完全に削除 |
+
+### 4.4 通知機能
+
+#### 4.4.1 1回リマインダー
 
 指定した日時に1回だけ通知を送信する機能。
 
@@ -170,7 +209,7 @@ REST API認証用のAPIキーを管理するモデル。
 | 設定 | 課題登録・編集画面で通知日時を指定 |
 | 送信 | 指定日時にTelegram/LINEで通知 |
 
-#### 4.3.2 督促通知
+#### 4.4.2 督促通知
 
 課題を完了するまで繰り返し通知を送信する機能。デフォルトで有効。
 
@@ -182,14 +221,14 @@ REST API認証用のAPIキーを管理するモデル。
 | 重要度「小」 | **60分**ごとに通知 |
 | 停止条件 | 課題の完了ボタンを押すまで継続 |
 
-#### 4.3.3 通知チャンネル
+#### 4.4.3 通知チャンネル
 
 | チャンネル | 設定方法 |
 |------------|----------|
 | Telegram | config.iniでBot Token設定、プロフィールでChat ID入力 |
 | LINE Notify | プロフィールでアクセストークン入力 |
 
-### 4.4 プロフィール機能
+### 4.5 プロフィール機能
 
 | 機能 | 説明 |
 |------|------|
@@ -198,7 +237,7 @@ REST API認証用のAPIキーを管理するモデル。
 | パスワード変更 | 現在のパスワードを確認後、新しいパスワードに変更 |
 | 通知設定 | Telegram/LINE通知の有効化とトークン設定 |
 
-### 4.4 管理者機能
+### 4.6 管理者機能
 
 | 機能 | 説明 |
 |------|------|

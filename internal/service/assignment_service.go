@@ -179,7 +179,7 @@ func (s *AssignmentService) SearchAssignments(userID uint, query, priority, filt
 		pageSize = 10
 	}
 
-	assignments, totalCount, err := s.assignmentRepo.Search(userID, query, priority, filter, page, pageSize)
+	assignments, totalCount, err := s.assignmentRepo.SearchWithPreload(userID, query, priority, filter, page, pageSize)
 	if err != nil {
 		return nil, err
 	}
@@ -255,11 +255,11 @@ func (s *AssignmentService) GetSubjectsByUser(userID uint) ([]string, error) {
 }
 
 type DashboardStats struct {
-	TotalPending  int64
-	DueToday      int
-	DueThisWeek   int
-	Overdue       int
-	Subjects      []string
+	TotalPending int64
+	DueToday     int
+	DueThisWeek  int
+	Overdue      int
+	Subjects     []string
 }
 
 func (s *AssignmentService) GetDashboardStats(userID uint) (*DashboardStats, error) {
@@ -270,11 +270,11 @@ func (s *AssignmentService) GetDashboardStats(userID uint) (*DashboardStats, err
 	subjects, _ := s.assignmentRepo.GetSubjectsByUserID(userID)
 
 	return &DashboardStats{
-		TotalPending:  pending,
-		DueToday:      len(dueToday),
-		DueThisWeek:   len(dueThisWeek),
-		Overdue:       int(overdueCount),
-		Subjects:      subjects,
+		TotalPending: pending,
+		DueToday:     len(dueToday),
+		DueThisWeek:  len(dueThisWeek),
+		Overdue:      int(overdueCount),
+		Subjects:     subjects,
 	}, nil
 }
 
@@ -392,4 +392,3 @@ func (s *AssignmentService) GetSubjectsWithArchived(userID uint, includeArchived
 func (s *AssignmentService) GetArchivedSubjects(userID uint) ([]string, error) {
 	return s.assignmentRepo.GetArchivedSubjects(userID)
 }
-

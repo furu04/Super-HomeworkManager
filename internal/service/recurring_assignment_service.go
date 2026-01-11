@@ -30,7 +30,7 @@ func NewRecurringAssignmentService() *RecurringAssignmentService {
 	}
 }
 
-type CreateRecurringInput struct {
+type CreateRecurringAssignmentInput struct {
 	Title                 string
 	Description           string
 	Subject               string
@@ -50,7 +50,7 @@ type CreateRecurringInput struct {
 	FirstDueDate          time.Time
 }
 
-func (s *RecurringAssignmentService) Create(userID uint, input CreateRecurringInput) (*models.RecurringAssignment, error) {
+func (s *RecurringAssignmentService) Create(userID uint, input CreateRecurringAssignmentInput) (*models.RecurringAssignment, error) {
 	if !isValidRecurrenceType(input.RecurrenceType) {
 		return nil, ErrInvalidRecurrenceType
 	}
@@ -121,15 +121,22 @@ func (s *RecurringAssignmentService) GetActiveByUser(userID uint) ([]models.Recu
 }
 
 type UpdateRecurringInput struct {
-	Title                 string
-	Description           string
-	Subject               string
-	Priority              string
-	DueTime               string
+	Title                 *string
+	Description           *string
+	Subject               *string
+	Priority              *string
+	RecurrenceType        *string
+	RecurrenceInterval    *int
+	RecurrenceWeekday     *int
+	RecurrenceDay         *int
+	DueTime               *string
+	EndType               *string
+	EndCount              *int
+	EndDate               *time.Time
 	EditBehavior          string
-	ReminderEnabled       bool
+	ReminderEnabled       *bool
 	ReminderOffset        *int
-	UrgentReminderEnabled bool
+	UrgentReminderEnabled *bool
 }
 
 func (s *RecurringAssignmentService) Update(userID, recurringID uint, input UpdateRecurringInput) (*models.RecurringAssignment, error) {
@@ -138,25 +145,72 @@ func (s *RecurringAssignmentService) Update(userID, recurringID uint, input Upda
 		return nil, err
 	}
 
-	recurring.Title = input.Title
-	recurring.Description = input.Description
-	recurring.Subject = input.Subject
-	recurring.Priority = input.Priority
-	if input.DueTime != "" {
-		recurring.DueTime = input.DueTime
+	if input.Title != nil {
+		recurring.Title = *input.Title
+	}
+	if input.Description != nil {
+		recurring.Description = *input.Description
+	}
+	if input.Subject != nil {
+		recurring.Subject = *input.Subject
+	}
+	if input.Priority != nil {
+		recurring.Priority = *input.Priority
+	}
+	if input.DueTime != nil {
+		recurring.DueTime = *input.DueTime
 	}
 	if input.EditBehavior != "" {
 		recurring.EditBehavior = input.EditBehavior
 	}
-	recurring.ReminderEnabled = input.ReminderEnabled
-	recurring.ReminderOffset = input.ReminderOffset
-	recurring.UrgentReminderEnabled = input.UrgentReminderEnabled
+	if input.ReminderEnabled != nil {
+		recurring.ReminderEnabled = *input.ReminderEnabled
+	}
+	if input.ReminderOffset != nil {
+		recurring.ReminderOffset = input.ReminderOffset
+	}
+	if input.UrgentReminderEnabled != nil {
+		recurring.UrgentReminderEnabled = *input.UrgentReminderEnabled
+	}
+
+	if input.RecurrenceType != nil && *input.RecurrenceType != "" && isValidRecurrenceType(*input.RecurrenceType) {
+		recurring.RecurrenceType = *input.RecurrenceType
+	}
+	if input.RecurrenceInterval != nil && *input.RecurrenceInterval > 0 {
+		recurring.RecurrenceInterval = *input.RecurrenceInterval
+	}
+	if input.RecurrenceWeekday != nil {
+		recurring.RecurrenceWeekday = input.RecurrenceWeekday
+	}
+	if input.RecurrenceDay != nil {
+		recurring.RecurrenceDay = input.RecurrenceDay
+	}
+
+	if input.EndType != nil && isValidEndType(*input.EndType) {
+		recurring.EndType = *input.EndType
+	}
+	if input.EndCount != nil {
+		recurring.EndCount = input.EndCount
+	}
+	if input.EndDate != nil {
+		recurring.EndDate = input.EndDate
+	}
 
 	if err := s.recurringRepo.Update(recurring); err != nil {
 		return nil, err
 	}
 
 	return recurring, nil
+}
+
+func (s *RecurringAssignmentService) SetActive(userID, recurringID uint, isActive bool) error {
+	recurring, err := s.GetByID(userID, recurringID)
+	if err != nil {
+		return err
+	}
+
+	recurring.IsActive = isActive
+	return s.recurringRepo.Update(recurring)
 }
 
 func (s *RecurringAssignmentService) UpdateAssignmentWithBehavior(

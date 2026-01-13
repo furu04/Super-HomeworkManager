@@ -7,6 +7,7 @@ import (
 
 	"homework-manager/internal/middleware"
 	"homework-manager/internal/service"
+	"homework-manager/internal/validation"
 
 	"github.com/gin-gonic/gin"
 )
@@ -264,6 +265,11 @@ func (h *APIHandler) CreateAssignment(c *gin.Context) {
 		return
 	}
 
+	if err := validation.ValidateAssignmentInput(input.Title, input.Description, input.Subject, input.Priority); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
 	dueDate, err := parseDateString(input.DueDate)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid due_date format. Use RFC3339 or 2006-01-02T15:04"})
@@ -383,6 +389,11 @@ func (h *APIHandler) UpdateAssignment(c *gin.Context) {
 	var input UpdateAssignmentInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
+		return
+	}
+
+	if err := validation.ValidateAssignmentInput(input.Title, input.Description, input.Subject, input.Priority); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 

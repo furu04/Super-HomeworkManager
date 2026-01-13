@@ -1,28 +1,56 @@
-// Homework Manager JavaScript
+const XSS = {
+    escapeHtml: function (str) {
+        if (str === null || str === undefined) return '';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    },
 
-document.addEventListener('DOMContentLoaded', function() {
-    // Auto-dismiss alerts after 5 seconds (exclude alerts inside modals)
+    setTextSafe: function (element, text) {
+        if (element) {
+            element.textContent = text;
+        }
+    },
+
+    sanitizeUrl: function (url) {
+        if (!url) return '';
+        const cleaned = String(url).replace(/[\x00-\x1F\x7F]/g, '').trim();
+        try {
+            const parsed = new URL(cleaned, window.location.origin);
+            if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+                return parsed.href;
+            }
+        } catch (e) {
+            if (cleaned.startsWith('/') && !cleaned.startsWith('//')) {
+                return cleaned;
+            }
+        }
+        return '';
+    }
+};
+
+window.XSS = XSS;
+
+document.addEventListener('DOMContentLoaded', function () {
     const alerts = document.querySelectorAll('.alert:not(.alert-danger):not(.modal .alert)');
-    alerts.forEach(function(alert) {
-        setTimeout(function() {
+    alerts.forEach(function (alert) {
+        setTimeout(function () {
             alert.classList.add('fade');
-            setTimeout(function() {
+            setTimeout(function () {
                 alert.remove();
             }, 150);
         }, 5000);
     });
 
-    // Confirm dialogs for dangerous actions
     const confirmForms = document.querySelectorAll('form[data-confirm]');
-    confirmForms.forEach(function(form) {
-        form.addEventListener('submit', function(e) {
+    confirmForms.forEach(function (form) {
+        form.addEventListener('submit', function (e) {
             if (!confirm(form.dataset.confirm)) {
                 e.preventDefault();
             }
         });
     });
 
-    // Set default datetime to now + 1 day for new assignments
     const dueDateInput = document.getElementById('due_date');
     if (dueDateInput && !dueDateInput.value) {
         const tomorrow = new Date();

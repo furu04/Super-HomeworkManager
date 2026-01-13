@@ -9,6 +9,7 @@ import (
 	"homework-manager/internal/middleware"
 	"homework-manager/internal/models"
 	"homework-manager/internal/service"
+	"homework-manager/internal/validation"
 
 	"github.com/gin-gonic/gin"
 )
@@ -125,6 +126,22 @@ func (h *AssignmentHandler) Create(c *gin.Context) {
 	subject := c.PostForm("subject")
 	priority := c.PostForm("priority")
 	dueDateStr := c.PostForm("due_date")
+
+	if err := validation.ValidateAssignmentInput(title, description, subject, priority); err != nil {
+		role, _ := c.Get(middleware.UserRoleKey)
+		name, _ := c.Get(middleware.UserNameKey)
+		RenderHTML(c, http.StatusOK, "assignments/new.html", gin.H{
+			"title":       "課題登録",
+			"error":       err.Error(),
+			"formTitle":   title,
+			"description": description,
+			"subject":     subject,
+			"priority":    priority,
+			"isAdmin":     role == "admin",
+			"userName":    name,
+		})
+		return
+	}
 
 	reminderEnabled := c.PostForm("reminder_enabled") == "on"
 	reminderAtStr := c.PostForm("reminder_at")
@@ -297,6 +314,11 @@ func (h *AssignmentHandler) Update(c *gin.Context) {
 	subject := c.PostForm("subject")
 	priority := c.PostForm("priority")
 	dueDateStr := c.PostForm("due_date")
+
+	if err := validation.ValidateAssignmentInput(title, description, subject, priority); err != nil {
+		c.Redirect(http.StatusFound, "/assignments")
+		return
+	}
 
 	reminderEnabled := c.PostForm("reminder_enabled") == "on"
 	reminderAtStr := c.PostForm("reminder_at")

@@ -115,8 +115,7 @@ homework-manager/
 | UserID | uint | ユーザーID | Unique, Not Null |
 | TelegramEnabled | bool | Telegram通知 | Default: false |
 | TelegramChatID | string | Telegram Chat ID | - |
-| LineEnabled | bool | LINE通知 | Default: false |
-| LineNotifyToken | string | LINE Notifyトークン | - |
+| NotifyOnCreate | bool | 課題追加時に通知 | Default: true |
 | CreatedAt | time.Time | 作成日時 | 自動設定 |
 | UpdatedAt | time.Time | 更新日時 | 自動更新 |
 | DeletedAt | gorm.DeletedAt | 論理削除日時 | ソフトデリート |
@@ -207,7 +206,7 @@ REST API認証用のAPIキーを管理するモデル。
 | 項目 | 説明 |
 |------|------|
 | 設定 | 課題登録・編集画面で通知日時を指定 |
-| 送信 | 指定日時にTelegram/LINEで通知 |
+| 送信 | 指定日時にTelegramで通知 |
 
 #### 4.4.2 督促通知
 
@@ -226,7 +225,6 @@ REST API認証用のAPIキーを管理するモデル。
 | チャンネル | 設定方法 |
 |------------|----------|
 | Telegram | config.iniでBot Token設定、プロフィールでChat ID入力 |
-| LINE Notify | プロフィールでアクセストークン入力 |
 
 ### 4.5 プロフィール機能
 
@@ -235,7 +233,7 @@ REST API認証用のAPIキーを管理するモデル。
 | プロフィール表示 | ユーザー情報を表示 |
 | プロフィール更新 | 表示名を変更 |
 | パスワード変更 | 現在のパスワードを確認後、新しいパスワードに変更 |
-| 通知設定 | Telegram/LINE通知の有効化とトークン設定 |
+| 通知設定 | Telegram通知の有効化とトークン設定 |
 
 ### 4.6 管理者機能
 

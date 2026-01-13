@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 
@@ -85,38 +84,6 @@ func (s *NotificationService) SendTelegramNotification(chatID, message string) e
 	return nil
 }
 
-func (s *NotificationService) SendLineNotification(token, message string) error {
-	if token == "" {
-		return fmt.Errorf("LINE Notify token is empty")
-	}
-
-	apiURL := "https://notify-api.line.me/api/notify"
-
-	data := url.Values{}
-	data.Set("message", message)
-
-	req, err := http.NewRequest("POST", apiURL, strings.NewReader(data.Encode()))
-	if err != nil {
-		return err
-	}
-
-	req.Header.Set("Authorization", "Bearer "+token)
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("LINE Notify API returned status %d", resp.StatusCode)
-	}
-
-	return nil
-}
-
 func (s *NotificationService) SendAssignmentReminder(userID uint, assignment *models.Assignment) error {
 	settings, err := s.GetUserSettings(userID)
 	if err != nil {
@@ -139,12 +106,6 @@ func (s *NotificationService) SendAssignmentReminder(userID uint, assignment *mo
 		}
 	}
 
-	if settings.LineEnabled && settings.LineNotifyToken != "" {
-		if err := s.SendLineNotification(settings.LineNotifyToken, message); err != nil {
-			errors = append(errors, fmt.Sprintf("LINE: %v", err))
-		}
-	}
-
 	if len(errors) > 0 {
 		return fmt.Errorf("notification errors: %s", strings.Join(errors, "; "))
 	}
@@ -162,7 +123,7 @@ func (s *NotificationService) SendAssignmentCreatedNotification(userID uint, ass
 		return nil
 	}
 
-	if !settings.TelegramEnabled && !settings.LineEnabled {
+	if !settings.TelegramEnabled {
 		return nil
 	}
 
@@ -180,12 +141,6 @@ func (s *NotificationService) SendAssignmentCreatedNotification(userID uint, ass
 	if settings.TelegramEnabled && settings.TelegramChatID != "" {
 		if err := s.SendTelegramNotification(settings.TelegramChatID, message); err != nil {
 			errors = append(errors, fmt.Sprintf("Telegram: %v", err))
-		}
-	}
-
-	if settings.LineEnabled && settings.LineNotifyToken != "" {
-		if err := s.SendLineNotification(settings.LineNotifyToken, message); err != nil {
-			errors = append(errors, fmt.Sprintf("LINE: %v", err))
 		}
 	}
 
@@ -249,12 +204,6 @@ func (s *NotificationService) SendUrgentReminder(userID uint, assignment *models
 	if settings.TelegramEnabled && settings.TelegramChatID != "" {
 		if err := s.SendTelegramNotification(settings.TelegramChatID, message); err != nil {
 			errors = append(errors, fmt.Sprintf("Telegram: %v", err))
-		}
-	}
-
-	if settings.LineEnabled && settings.LineNotifyToken != "" {
-		if err := s.SendLineNotification(settings.LineNotifyToken, message); err != nil {
-			errors = append(errors, fmt.Sprintf("LINE: %v", err))
 		}
 	}
 

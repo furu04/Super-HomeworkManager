@@ -143,8 +143,6 @@ func (h *ProfileHandler) UpdateNotificationSettings(c *gin.Context) {
 	settings := &models.UserNotificationSettings{
 		TelegramEnabled: c.PostForm("telegram_enabled") == "on",
 		TelegramChatID:  c.PostForm("telegram_chat_id"),
-		LineEnabled:     c.PostForm("line_enabled") == "on",
-		LineNotifyToken: c.PostForm("line_token"),
 		NotifyOnCreate:  c.PostForm("notify_on_create") == "on",
 	}
 

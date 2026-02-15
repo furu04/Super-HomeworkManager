@@ -76,7 +76,10 @@ func (r *RecurringAssignmentRepository) FindDueForGeneration() ([]models.Recurri
 			}
 		}
 
-		if shouldGenerate {
+		if !shouldGenerate {
+			rec.IsActive = false
+			r.db.Save(&rec)
+		} else {
 			result = append(result, rec)
 		}
 	}

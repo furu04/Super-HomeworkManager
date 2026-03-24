@@ -14,6 +14,7 @@ import (
 	"homework-manager/internal/middleware"
 	"homework-manager/internal/service"
 
+	"github.com/dchest/captcha"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
@@ -175,7 +176,8 @@ func Setup(cfg *config.Config) *gin.Engine {
 	r.Use(middleware.RequestTimer())
 
 	securityConfig := middleware.SecurityConfig{
-		HTTPS: cfg.HTTPS,
+		HTTPS:            cfg.HTTPS,
+		TurnstileEnabled: cfg.Captcha.Enabled && cfg.Captcha.Type == "turnstile",
 	}
 	r.Use(middleware.SecurityHeaders(securityConfig))
 	r.Use(middleware.ForceHTTPS(securityConfig))
@@ -196,12 +198,21 @@ func Setup(cfg *config.Config) *gin.Engine {
 
 	notificationService.StartReminderScheduler()
 
-	authHandler := handler.NewAuthHandler()
+	authHandler := handler.NewAuthHandler(cfg.Captcha)
 	assignmentHandler := handler.NewAssignmentHandler(notificationService)
 	adminHandler := handler.NewAdminHandler()
 	profileHandler := handler.NewProfileHandler(notificationService)
 	apiHandler := handler.NewAPIHandler()
 	apiRecurringHandler := handler.NewAPIRecurringHandler()
+
+	r.GET("/captcha/:file", gin.WrapH(captcha.Server(captcha.StdWidth, captcha.StdHeight)))
+	r.GET("/captcha-new", func(c *gin.Context) {
+		id := captcha.New()
+		c.String(http.StatusOK, id)
+	})
+
+	r.GET("/login/2fa", authHandler.ShowLogin2FA)
+	r.POST("/login/2fa", csrfMiddleware, authHandler.Login2FA)
 
 	guest := r.Group("/")
 	guest.Use(middleware.GuestOnly())
@@ -252,6 +263,9 @@ func Setup(cfg *config.Config) *gin.Engine {
 		auth.POST("/profile", profileHandler.Update)
 		auth.POST("/profile/password", profileHandler.ChangePassword)
 		auth.POST("/profile/notifications", profileHandler.UpdateNotificationSettings)
+		auth.GET("/profile/totp/setup", profileHandler.ShowTOTPSetup)
+		auth.POST("/profile/totp/setup", profileHandler.EnableTOTP)
+		auth.POST("/profile/totp/disable", profileHandler.DisableTOTP)
 
 		admin := auth.Group("/admin")
 		admin.Use(middleware.AdminRequired())

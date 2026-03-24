@@ -1,0 +1,46 @@
+{{template "base" .}}
+
+{{define "content"}}
+<div class="row justify-content-center">
+    <div class="col-md-5 col-lg-4">
+        <div class="card shadow">
+            <div class="card-body p-4">
+                <div class="text-center mb-4">
+                    <i class="bi bi-shield-lock display-4 text-primary"></i>
+                    <h2 class="mt-2">2段階認証</h2>
+                    <p class="text-muted small">認証アプリに表示されている6桁のコードを入力してください</p>
+                </div>
+
+                {{if .error}}
+                <div class="alert alert-danger">{{.error}}</div>
+                {{end}}
+
+                <form method="POST" action="/login/2fa">
+                    {{.csrfField}}
+                    <div class="mb-4">
+                        <label for="totp_code" class="form-label">認証コード</label>
+                        <input type="text" class="form-control form-control-lg text-center"
+                            id="totp_code" name="totp_code"
+                            placeholder="000000"
+                            maxlength="6" pattern="[0-9]{6}"
+                            inputmode="numeric" autocomplete="one-time-code"
+                            autofocus required>
+                        <div class="form-text text-center">Google Authenticator などのアプリで確認</div>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-shield-check me-1"></i>確認
+                        </button>
+                    </div>
+                </form>
+
+                <hr class="my-4">
+
+                <div class="text-center">
+                    <a href="/login" class="text-muted small">別のアカウントでログイン</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}

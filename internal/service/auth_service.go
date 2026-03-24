@@ -104,3 +104,23 @@ func (s *AuthService) UpdateProfile(userID uint, name string) error {
 	user.Name = name
 	return s.userRepo.Update(user)
 }
+
+func (s *AuthService) EnableTOTP(userID uint, secret string) error {
+	user, err := s.userRepo.FindByID(userID)
+	if err != nil {
+		return ErrUserNotFound
+	}
+	user.TOTPSecret = secret
+	user.TOTPEnabled = true
+	return s.userRepo.Update(user)
+}
+
+func (s *AuthService) DisableTOTP(userID uint) error {
+	user, err := s.userRepo.FindByID(userID)
+	if err != nil {
+		return ErrUserNotFound
+	}
+	user.TOTPSecret = ""
+	user.TOTPEnabled = false
+	return s.userRepo.Update(user)
+}

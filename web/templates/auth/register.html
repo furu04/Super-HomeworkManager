@@ -1,5 +1,11 @@
 {{template "base" .}}
 
+{{define "head"}}
+{{if and .captchaEnabled (eq .captchaType "turnstile")}}
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+{{end}}
+{{end}}
+
 {{define "content"}}
 <div class="row justify-content-center">
     <div class="col-md-5 col-lg-4">
@@ -28,14 +34,36 @@
                     <div class="mb-3">
                         <label for="password" class="form-label">パスワード</label>
                         <input type="password" class="form-control" id="password" name="password" required
-                            minlength="6">
-                        <div class="form-text">6文字以上</div>
+                            minlength="8">
+                        <div class="form-text">8文字以上</div>
                     </div>
                     <div class="mb-3">
                         <label for="password_confirm" class="form-label">パスワード（確認）</label>
                         <input type="password" class="form-control" id="password_confirm" name="password_confirm"
-                            required minlength="6">
+                            required minlength="8">
                     </div>
+
+                    {{if .captchaEnabled}}
+                        {{if eq .captchaType "turnstile"}}
+                        <div class="mb-3 d-flex justify-content-center">
+                            <div class="cf-turnstile" data-sitekey="{{.turnstileSiteKey}}"></div>
+                        </div>
+                        {{else if eq .captchaType "image"}}
+                        <div class="mb-3">
+                            <label class="form-label">画像認証</label>
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <img src="/captcha/{{.captchaID}}.png" alt="CAPTCHA" class="border rounded" id="captchaImg">
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="reloadCaptcha()" title="更新">
+                                    <i class="bi bi-arrow-clockwise"></i>
+                                </button>
+                            </div>
+                            <input type="hidden" name="captcha_id" id="captchaID" value="{{.captchaID}}">
+                            <input type="text" class="form-control" name="captcha_answer"
+                                placeholder="上の数字を入力" autocomplete="off" required>
+                        </div>
+                        {{end}}
+                    {{end}}
+
                     <div class="d-grid">
                         <button type="submit" class="btn btn-primary btn-lg">登録</button>
                     </div>
@@ -51,4 +79,19 @@
         </div>
     </div>
 </div>
+{{end}}
+
+{{define "scripts"}}
+{{if and .captchaEnabled (eq .captchaType "image")}}
+<script>
+function reloadCaptcha() {
+    fetch('/captcha-new')
+        .then(r => r.text())
+        .then(id => {
+            document.getElementById('captchaID').value = id;
+            document.getElementById('captchaImg').src = '/captcha/' + id + '.png?' + Date.now();
+        });
+}
+</script>
+{{end}}
 {{end}}

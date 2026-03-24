@@ -21,6 +21,13 @@ type NotificationConfig struct {
 	TelegramBotToken string
 }
 
+type CaptchaConfig struct {
+	Enabled            bool
+	Type               string // "turnstile" or "image"
+	TurnstileSiteKey   string
+	TurnstileSecretKey string
+}
+
 type Config struct {
 	Port              string
 	SessionSecret     string
@@ -34,6 +41,7 @@ type Config struct {
 	TrustedProxies    []string
 	Database          DatabaseConfig
 	Notification      NotificationConfig
+	Captcha           CaptchaConfig
 }
 
 func Load(configPath string) *Config {
@@ -55,6 +63,10 @@ func Load(configPath string) *Config {
 			User:     "root",
 			Password: "",
 			Name:     "homework_manager",
+		},
+		Captcha: CaptchaConfig{
+			Enabled: false,
+			Type:    "image",
 		},
 	}
 
@@ -134,6 +146,21 @@ func Load(configPath string) *Config {
 		if section.HasKey("telegram_bot_token") {
 			cfg.Notification.TelegramBotToken = section.Key("telegram_bot_token").String()
 		}
+
+		// Captcha section
+		section = iniFile.Section("captcha")
+		if section.HasKey("enabled") {
+			cfg.Captcha.Enabled = section.Key("enabled").MustBool(false)
+		}
+		if section.HasKey("type") {
+			cfg.Captcha.Type = section.Key("type").String()
+		}
+		if section.HasKey("turnstile_site_key") {
+			cfg.Captcha.TurnstileSiteKey = section.Key("turnstile_site_key").String()
+		}
+		if section.HasKey("turnstile_secret_key") {
+			cfg.Captcha.TurnstileSecretKey = section.Key("turnstile_secret_key").String()
+		}
 	} else {
 		log.Println("config.ini not found, using environment variables or defaults")
 	}
@@ -182,6 +209,18 @@ func Load(configPath string) *Config {
 	}
 	if telegramToken := os.Getenv("TELEGRAM_BOT_TOKEN"); telegramToken != "" {
 		cfg.Notification.TelegramBotToken = telegramToken
+	}
+	if captchaEnabled := os.Getenv("CAPTCHA_ENABLED"); captchaEnabled != "" {
+		cfg.Captcha.Enabled = captchaEnabled == "true" || captchaEnabled == "1"
+	}
+	if captchaType := os.Getenv("CAPTCHA_TYPE"); captchaType != "" {
+		cfg.Captcha.Type = captchaType
+	}
+	if turnstileSiteKey := os.Getenv("TURNSTILE_SITE_KEY"); turnstileSiteKey != "" {
+		cfg.Captcha.TurnstileSiteKey = turnstileSiteKey
+	}
+	if turnstileSecretKey := os.Getenv("TURNSTILE_SECRET_KEY"); turnstileSecretKey != "" {
+		cfg.Captcha.TurnstileSecretKey = turnstileSecretKey
 	}
 
 	if cfg.SessionSecret == "" {

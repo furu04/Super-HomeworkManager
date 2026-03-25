@@ -22,7 +22,7 @@ secret = CHANGE_THIS_TO_A_SECURE_RANDOM_STRING
 allow_registration = true
 
 [security]
-https = true
+https = false
 ; こちらも本番環境では必ず変更してください
 csrf_secret = CHANGE_THIS_TO_A_SECURE_RANDOM_STRING
 rate_limit_enabled = true
@@ -32,3 +32,15 @@ trusted_proxies = 172.16.0.0/12
 
 [notification]
 telegram_bot_token =
+
+[captcha]
+; CAPTCHAを有効にするか (true/false)
+enabled = false
+
+; CAPTCHAの種類: "image"（自前生成）または "turnstile"（Cloudflare Turnstile）
+type = image
+
+; Cloudflare Turnstileを使用する場合（typeをturnstileに設定）
+; Cloudflare ダッシュボードで取得したサイトキーとシークレットキーを設定
+; turnstile_site_key = 0x4AAAAAAAxxxxxxxxxxxxxxxx
+; turnstile_secret_key = 0x4AAAAAAAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

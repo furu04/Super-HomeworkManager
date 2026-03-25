@@ -9,8 +9,6 @@ services:
     restart: unless-stopped
     networks:
       - internal
-    expose:
-      - "8080"
     depends_on:
       db:
         condition: service_healthy

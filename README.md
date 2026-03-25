@@ -38,10 +38,27 @@
 
 ### 前提条件
 
-- **Go 1.24 以上** (ローカルビルドの場合)
-- **Docker / Docker Compose** (コンテナ実行の場合)
+- **Docker Desktop** または Docker / Docker Compose
+- （ローカルで直接ビルドする場合のみ）**Go 1.24 以上**
 
-### ローカルで実行
+### 最も簡単な起動方法
+
+初めて使う方には、**Dockerを使用した起動**をおすすめします。
+
+1. このリポジトリをダウンロード（または `git clone`）し、フォルダを開きます。
+2. フォルダ内にある `config.ini.docker.example` というファイルをコピーし、**名前を `config.ini` に変更**します。
+   （※ **必須**: この作業を忘れると起動エラーになります）
+3. ターミナル（またはコマンドプロンプトやPowerShell）でこのフォルダを開き、以下のコマンドを実行します：
+   ```bash
+   docker-compose up -d --build
+   ```
+4. ブラウザを開き、**http://localhost** にアクセスしてください。
+
+> **注意**: 本番環境（外部公開するサーバー上）で使用する場合は、`Caddyfile` の `:80` を実際のドメインに変更し、`config.ini` 内の `[session] secret` 等の安全な文字列への変更を必ず行ってください。
+
+### ローカルビルド（開発者向け）
+
+開発目的で直接実行する場合の手順です。
 
 ```bash
 # 1. リポジトリのクローン
@@ -65,20 +82,6 @@ cp config.ini.example config.ini
 > `Copy-Item config.ini.example config.ini` → `.\homework-manager.exe`
 
 ブラウザで **http://localhost:8080** にアクセスしてください。
-
-### Docker での実行
-
-```bash
-# 1. 設定ファイルの準備 (必須 ※これを行わないとDockerがディレクトリとして作成し起動に失敗します)
-cp config.ini.example config.ini
-
-# 2. コンテナの起動
-docker-compose up -d --build
-```
-
-ブラウザで **http://localhost:8080** にアクセスしてください。
-
-> **注意**: 本番環境で使用する場合は、`config.ini` の `[session] secret` と `[security] csrf_secret` を必ず変更してください。
 
 ## 更新方法
 

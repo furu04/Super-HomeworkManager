@@ -1,102 +1,105 @@
-# Homework Manager
+<div align="center">
 
-シンプルな課題管理アプリケーションです。学生の課題管理を効率化するために設計されています。
+# Super Homework Manager
+
+シンプルで高機能な課題管理アプリケーション
+
+[![Go](https://img.shields.io/badge/Go-1.24+-00ADD8?logo=go&logoColor=white)](https://go.dev/)
+[![License](https://img.shields.io/badge/License-AGPLv3-blue.svg)](LICENSE.md)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](#docker-での実行)
+
+</div>
+
+---
+
+## 概要
+
+学生の課題管理を効率化するために設計されたWebアプリケーションです。
+繰り返し課題の自動生成やダッシュボードによる期限管理など、日々の課題管理をサポートします。
+
+## スクリーンショット
+
+| ダッシュボード | 課題一覧 | API |
+|:---:|:---:|:---:|
+| ![ダッシュボード](./docs/images/dashboard.png) | ![課題一覧](./docs/images/list.png) | ![API](./docs/images/api.png) |
 
 ## 特徴
 
-- **課題管理**: 課題の登録、編集、削除、完了状況の管理
-- **繰り返し課題**: 日次・週次・月次の繰り返し課題を自動生成・管理
-- **ダッシュボード**: 期限切れ、本日期限、今週期限の課題をひと目で確認
-- **API対応**: 外部連携用のRESTful API (APIキー認証)
-- **セキュリティ**:
-  - CSRF対策
-  - レート制限 (Rate Limiting)
-  - セキュアなセッション管理
-- **ポータビリティ**: Pure Go SQLiteドライバー使用により、CGO不要でどこでも動作
+| 機能 | 説明 |
+|---|---|
+| **課題管理** | 課題の登録・編集・削除・完了状況の管理 |
+| **繰り返し課題** | 日次・週次・月次の繰り返し課題を自動生成 |
+| **ダッシュボード** | 期限切れ・本日期限・今週期限の課題をひと目で確認 |
+| **REST API** | 外部連携用のAPIキー認証付きRESTful API |
+| **セキュリティ** | CSRF対策 / レート制限 / セキュアなセッション管理 / 2FA対応 |
+| **ポータビリティ** | Pure Go SQLiteドライバー使用でCGO不要 |
 
-![ダッシュボード](./docs/images/dashboard.png)
-![課題一覧](./docs/images/list.png)
-![API](./docs/images/api.png)
+## クイックスタート
 
+### 前提条件
 
-## TODO
+- **Go 1.24 以上** (ローカルビルドの場合)
+- **Docker / Docker Compose** (コンテナ実行の場合)
 
-- 取り組み目安時間の登録
-- SNS連携（もしかしたらやるかも）
+### ローカルで実行
 
-## ドキュメント
+```bash
+# 1. リポジトリのクローン
+git clone <repository-url>
+cd Homework-Manager
 
-詳細な仕様やAPIドキュメントは `docs/` ディレクトリを参照してください。
+# 2. 依存関係のダウンロード
+go mod download
 
-- [仕様書](docs/SPECIFICATION.md): 機能詳細、データモデル、設定項目
-- [APIドキュメント](docs/API.md): APIのエンドポイント、リクエスト/レスポンス形式
+# 3. ビルド
+go build -o homework-manager cmd/server/main.go
 
-## 前提条件
+# 4. 設定ファイルの準備
+cp config.ini.example config.ini
 
-- Go 1.24 以上
+# 5. 実行
+./homework-manager
+```
 
-## インストール方法
+> **Windows (PowerShell)** の場合:
+> `Copy-Item config.ini.example config.ini` → `.\homework-manager.exe`
 
-1.  **リポジトリのクローン**
-    ```bash
-    git clone <repository-url>
-    cd Homework-Manager
-    ```
+ブラウザで **http://localhost:8080** にアクセスしてください。
 
-2.  **依存関係のダウンロード**
-    ```bash
-    go mod download
-    ```
+### Docker での実行
 
-3.  **アプリケーションのビルド**
-    ```bash
-    go build -o homework-manager cmd/server/main.go
-    ```
+```bash
+# 1. 設定ファイルの準備 (必須 ※これを行わないとDockerがディレクトリとして作成し起動に失敗します)
+cp config.ini.example config.ini
 
-4.  **設定ファイルの準備**
-    サンプル設定ファイルをコピーして、`config.ini` を作成します。
-    
-    ```bash
-    cp config.ini.example config.ini
-    ```
-    ※ Windows (PowerShell): `Copy-Item config.ini.example config.ini`
+# 2. コンテナの起動
+docker-compose up -d --build
+```
 
-    **重要**: 本番環境で使用する場合は、必ず `[session] secret` と `[security] csrf_secret` を変更してください。
+ブラウザで **http://localhost:8080** にアクセスしてください。
 
-5.  **アプリケーションの実行**
-    ```bash
-    ./homework-manager
-    ```
-    ※ Windows (PowerShell): `.\homework-manager.exe`
-
-    ブラウザで `http://localhost:8080` にアクセスしてください。
-
-## Dockerでの実行
-
-DockerおよびDocker Composeがインストールされている環境では、以下の手順で簡単に起動できます。
-
-1.  **設定ファイルの準備**
-    ```bash
-    cp config.ini.example config.ini
-    ```
-    ※ 必須です。これを行わないとDockerがディレクトリとして作成してしまい起動に失敗します。
-
-2.  **コンテナの起動**
-    ```bash
-    docker-compose up -d --build
-    ```
-
-3.  **アクセスの確認**
-    ブラウザで `http://localhost:8080` にアクセスしてください。
-
+> **注意**: 本番環境で使用する場合は、`config.ini` の `[session] secret` と `[security] csrf_secret` を必ず変更してください。
 
 ## 更新方法
 
-1.  `git pull` で最新コードを取得
-2.  `go build -o homework-manager cmd/server/main.go` で再ビルド
-3.  アプリケーションを再起動
+```bash
+git pull
+go build -o homework-manager cmd/server/main.go
+# アプリケーションを再起動
+```
+
+## ドキュメント
+
+| ドキュメント | 内容 |
+|---|---|
+| [仕様書](docs/SPECIFICATION.md) | 機能詳細・データモデル・設定項目 |
+| [APIドキュメント](docs/API.md) | エンドポイント・リクエスト/レスポンス形式 |
+
+## TODO
+
+- [ ] 取り組み目安時間の登録
+- [ ] SNS連携
 
 ## ライセンス
 
-本ソフトウェアのライセンスはAGPLv3 (GNU Affero General Public License v3)です。
-詳しくはLICENSEファイルをご覧ください。
+[AGPLv3 (GNU Affero General Public License v3)](LICENSE.md)

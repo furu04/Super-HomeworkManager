@@ -83,6 +83,10 @@ cp config.ini.example config.ini
 
 ブラウザで **http://localhost:8080** にアクセスしてください。
 
+## 利用時の注意点
+
+1人でSuper Homework Managerを利用する場合は、自分のユーザを登録した後にconfigファイルの[auth]セクションのallow_registrationをfalseに変更し再起動してください。
+
 ## 更新方法
 
 ```bash

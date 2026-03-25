@@ -101,12 +101,6 @@ func CSRF(config CSRFConfig) gin.HandlerFunc {
 		}
 
 		c.Next()
-
-		newToken, err := generateCSRFToken(config.Secret)
-		if err == nil {
-			session.Set(csrfTokenKey, newToken)
-			session.Save()
-		}
 	}
 }
 

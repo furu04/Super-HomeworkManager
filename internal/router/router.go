@@ -211,7 +211,7 @@ func Setup(cfg *config.Config) *gin.Engine {
 		c.String(http.StatusOK, id)
 	})
 
-	r.GET("/login/2fa", authHandler.ShowLogin2FA)
+	r.GET("/login/2fa", csrfMiddleware, authHandler.ShowLogin2FA)
 	r.POST("/login/2fa", csrfMiddleware, authHandler.Login2FA)
 
 	guest := r.Group("/")

@@ -2,111 +2,43 @@
 
 {{define "head"}}
 <style>
-    .stat-card {
-        transition: transform 0.2s ease-in-out;
-    }
-
-    .stat-card:hover {
-        transform: translateY(-5px);
-    }
-
-    .progress {
-        height: 25px;
-    }
-
-    .progress-bar {
-        font-size: 0.9rem;
-        font-weight: 500;
-    }
-
-    .subject-row:hover {
-        background-color: rgba(0, 0, 0, 0.02);
-    }
-
-    .table-progress {
-        height: 20px;
-    }
-
-    .pagination-info {
-        font-size: 0.875rem;
-    }
-
-    .stats-table {
-        min-width: 700px;
-    }
-
-    .stats-table th,
-    .stats-table td {
-        white-space: nowrap;
-    }
-
-    .stats-table th:first-child,
-    .stats-table td:first-child {
-        min-width: 120px;
-    }
-
+    .stat-card { transition: transform 0.2s ease-in-out; }
+    .stat-card:hover { transform: translateY(-5px); }
+    .progress { height: 25px; }
+    .progress-bar { font-size: 0.9rem; font-weight: 500; }
+    .subject-row:hover { background-color: rgba(0, 0, 0, 0.02); }
+    .table-progress { height: 20px; }
+    .pagination-info { font-size: 0.875rem; }
+    .stats-table { min-width: 700px; }
+    .stats-table th, .stats-table td { white-space: nowrap; }
+    .stats-table th:first-child, .stats-table td:first-child { min-width: 120px; }
     #shareCard {
-        width: 600px;
-        height: 315px;
-        position: fixed;
-        left: -9999px;
-        top: 0;
+        width: 600px; height: 315px;
+        position: fixed; left: -9999px; top: 0;
         background: linear-gradient(135deg, #005bea 0%, #00c6fb 100%);
-        padding: 2rem;
-        color: white;
-        border-radius: 12px;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
+        padding: 2rem; color: white; border-radius: 12px;
+        display: flex; flex-direction: column; justify-content: space-between;
         font-family: 'Inter', system-ui, -apple-system, sans-serif;
     }
-
-    #shareCard .card-title {
-        font-size: 1.5rem;
-        font-weight: bold;
-        opacity: 0.9;
-    }
-
-    #shareCard .rate-display {
-        font-size: 5rem;
-        font-weight: bold;
-        line-height: 1;
-        margin: 1rem 0;
-    }
-
+    #shareCard .card-title { font-size: 1.5rem; font-weight: bold; opacity: 0.9; }
+    #shareCard .rate-display { font-size: 5rem; font-weight: bold; line-height: 1; margin: 1rem 0; }
     #shareCard .stats-row {
-        display: flex;
-        justify-content: space-around;
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 8px;
-        padding: 1rem;
+        display: flex; justify-content: space-around;
+        background: rgba(255,255,255,0.1); border-radius: 8px; padding: 1rem;
         backdrop-filter: blur(5px);
     }
-
-    #shareCard .stat-item {
-        text-align: center;
-    }
-
-    #shareCard .stat-label {
-        font-size: 0.8rem;
-        opacity: 0.8;
-        display: block;
-        margin-bottom: 0.2rem;
-    }
-
-    #shareCard .stat-value {
-        font-size: 1.4rem;
-        font-weight: bold;
-    }
+    #shareCard .stat-item { text-align: center; }
+    #shareCard .stat-label { font-size: 0.8rem; opacity: 0.8; display: block; margin-bottom: 0.2rem; }
+    #shareCard .stat-value { font-size: 1.4rem; font-weight: bold; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 {{end}}
 
 {{define "content"}}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1><i class="bi bi-bar-chart me-2"></i>統計</h1>
+    <h1><i class="bi bi-bar-chart me-2" aria-hidden="true"></i>統計</h1>
     <a href="/assignments" class="btn btn-outline-secondary">
-        <i class="bi bi-arrow-left me-1"></i>課題一覧に戻る
+        <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>課題一覧に戻る
     </a>
 </div>
 
@@ -114,32 +46,64 @@
     <div class="card-body">
         <form method="GET" action="/statistics" class="row g-3">
             <div class="col-md-4">
-                <label class="form-label">科目</label>
-                <select name="subject" class="form-select">
+                <label for="subjectFilter" class="form-label">科目</label>
+                <select id="subjectFilter" name="subject" class="form-select">
                     <option value="">すべての科目</option>
                     {{range .subjects}}
-                    <option value="{{.}}" {{if eq . $.selectedSubject}}selected{{end}}>{{.}}{{if index
-                        $.archivedSubjects .}} (アーカイブ済){{end}}</option>
+                    <option value="{{.}}" {{if eq . $.selectedSubject}}selected{{end}}>{{.}}{{if index $.archivedSubjects .}} (アーカイブ済){{end}}</option>
                     {{end}}
                 </select>
             </div>
             <div class="col-md-2">
-                <label class="form-label">登録日（開始）</label>
-                <input type="date" name="from" class="form-control" value="{{.fromDate}}">
+                <label for="fromDate" class="form-label">登録日（開始）</label>
+                <input type="date" id="fromDate" name="from" class="form-control" value="{{.fromDate}}">
             </div>
             <div class="col-md-2">
-                <label class="form-label">登録日（終了）</label>
-                <input type="date" name="to" class="form-control" value="{{.toDate}}">
+                <label for="toDate" class="form-label">登録日（終了）</label>
+                <input type="date" id="toDate" name="to" class="form-control" value="{{.toDate}}">
             </div>
             <div class="col-md-4 d-flex align-items-end">
                 <button type="submit" class="btn btn-primary me-2">
-                    <i class="bi bi-filter me-1"></i>絞り込み
+                    <i class="bi bi-filter me-1" aria-hidden="true"></i>絞り込み
                 </button>
                 <a href="/statistics" class="btn btn-outline-secondary">
-                    <i class="bi bi-x-lg me-1"></i>リセット
+                    <i class="bi bi-x-lg me-1" aria-hidden="true"></i>リセット
                 </a>
             </div>
         </form>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <i class="bi bi-download me-2" aria-hidden="true"></i>CSVエクスポート
+    </div>
+    <div class="card-body">
+        <form method="GET" action="/assignments/export" class="row g-3">
+            <div class="col-md-3">
+                <label for="csvSubject" class="form-label">科目</label>
+                <select id="csvSubject" name="subject" class="form-select">
+                    <option value="">すべての科目</option>
+                    {{range .subjects}}
+                    <option value="{{.}}">{{.}}</option>
+                    {{end}}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="csvFrom" class="form-label">提出期限（開始）</label>
+                <input type="date" id="csvFrom" name="from" class="form-control">
+            </div>
+            <div class="col-md-3">
+                <label for="csvTo" class="form-label">提出期限（終了）</label>
+                <input type="date" id="csvTo" name="to" class="form-control">
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-outline-secondary">
+                    <i class="bi bi-file-earmark-spreadsheet me-1" aria-hidden="true"></i>CSVダウンロード
+                </button>
+            </div>
+        </form>
+        <small class="text-muted mt-2 d-block">期間・科目を指定しない場合は全件をエクスポートします。提出期限を基準に絞り込みます。</small>
     </div>
 </div>
 
@@ -152,7 +116,7 @@
                         <h6 class="text-white-50 mb-1">総課題数</h6>
                         <h2 class="mb-0">{{.stats.TotalAssignments}}</h2>
                     </div>
-                    <i class="bi bi-list-task display-4 opacity-50"></i>
+                    <i class="bi bi-list-task display-4 opacity-50" aria-hidden="true"></i>
                 </div>
             </div>
         </div>
@@ -165,7 +129,7 @@
                         <h6 class="text-white-50 mb-1">完了</h6>
                         <h2 class="mb-0">{{.stats.CompletedAssignments}}</h2>
                     </div>
-                    <i class="bi bi-check-circle display-4 opacity-50"></i>
+                    <i class="bi bi-check-circle display-4 opacity-50" aria-hidden="true"></i>
                 </div>
             </div>
         </div>
@@ -178,7 +142,7 @@
                         <h6 class="text-dark-50 mb-1">未完了</h6>
                         <h2 class="mb-0">{{.stats.PendingAssignments}}</h2>
                     </div>
-                    <i class="bi bi-hourglass-split display-4 opacity-50"></i>
+                    <i class="bi bi-hourglass-split display-4 opacity-50" aria-hidden="true"></i>
                 </div>
             </div>
         </div>
@@ -191,7 +155,7 @@
                         <h6 class="text-white-50 mb-1">期限切れ</h6>
                         <h2 class="mb-0">{{.stats.OverdueAssignments}}</h2>
                     </div>
-                    <i class="bi bi-exclamation-triangle display-4 opacity-50"></i>
+                    <i class="bi bi-exclamation-triangle display-4 opacity-50" aria-hidden="true"></i>
                 </div>
             </div>
         </div>
@@ -200,38 +164,24 @@
 
 <div class="card mb-4">
     <div class="card-header d-flex justify-content-between align-items-center">
-        <span><i class="bi bi-clock-history me-2"></i>期限内完了率</span>
+        <span><i class="bi bi-clock-history me-2" aria-hidden="true"></i>期限内完了率</span>
         <button class="btn btn-sm btn-outline-primary" onclick="generateShareImage()">
-            <i class="bi bi-share me-1"></i>シェア
+            <i class="bi bi-share me-1" aria-hidden="true"></i>シェア
         </button>
     </div>
     <div class="card-body">
         <div class="row align-items-center">
             <div class="col-md-3 text-center mb-3 mb-md-0">
-                <h1
-                    class="display-3 mb-0 {{if ge .stats.OnTimeCompletionRate 80.0}}text-success{{else if ge .stats.OnTimeCompletionRate 50.0}}text-warning{{else}}text-danger{{end}}">
+                <p class="display-3 mb-0 {{if ge .stats.OnTimeCompletionRate 80.0}}text-success{{else if ge .stats.OnTimeCompletionRate 50.0}}text-warning{{else}}text-danger{{end}}" aria-label="期限内完了率 {{printf "%.1f" .stats.OnTimeCompletionRate}}パーセント">
                     {{printf "%.1f" .stats.OnTimeCompletionRate}}%
-                </h1>
+                </p>
                 <small class="text-muted">期限内完了率</small>
             </div>
             <div class="col-md-9">
-                <div class="progress">
-                    {{if ge .stats.OnTimeCompletionRate 80.0}}
-                    <div class="progress-bar bg-success" role="progressbar"
-                        style="width: {{.stats.OnTimeCompletionRate}}%">
+                <div class="progress" role="progressbar" aria-label="期限内完了率" aria-valuenow="{{printf "%.0f" .stats.OnTimeCompletionRate}}" aria-valuemin="0" aria-valuemax="100">
+                    <div class="progress-bar {{if ge .stats.OnTimeCompletionRate 80.0}}bg-success{{else if ge .stats.OnTimeCompletionRate 50.0}}bg-warning{{else}}bg-danger{{end}}" style="width: {{.stats.OnTimeCompletionRate}}%">
                         {{printf "%.1f" .stats.OnTimeCompletionRate}}% 期限内に完了
                     </div>
-                    {{else if ge .stats.OnTimeCompletionRate 50.0}}
-                    <div class="progress-bar bg-warning" role="progressbar"
-                        style="width: {{.stats.OnTimeCompletionRate}}%">
-                        {{printf "%.1f" .stats.OnTimeCompletionRate}}% 期限内に完了
-                    </div>
-                    {{else}}
-                    <div class="progress-bar bg-danger" role="progressbar"
-                        style="width: {{.stats.OnTimeCompletionRate}}%">
-                        {{printf "%.1f" .stats.OnTimeCompletionRate}}% 期限内に完了
-                    </div>
-                    {{end}}
                 </div>
                 <small class="text-muted mt-2 d-block">完了した課題のうち、期限内に完了した割合を表示しています。</small>
             </div>
@@ -241,22 +191,22 @@
 
 <div class="card mb-4" id="activeSubjectsCard">
     <div class="card-header d-flex justify-content-between align-items-center">
-        <span><i class="bi bi-collection me-2"></i>アクティブ科目</span>
+        <span><i class="bi bi-collection me-2" aria-hidden="true"></i>アクティブ科目</span>
         <span class="badge bg-primary" id="activeCount">0</span>
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
-            <table class="table table-hover mb-0 stats-table">
+            <table class="table table-hover mb-0 stats-table" aria-label="アクティブ科目統計">
                 <thead class="table-light">
                     <tr>
-                        <th>科目</th>
-                        <th class="text-center">総数</th>
-                        <th class="text-center">完了</th>
-                        <th class="text-center">未完了</th>
-                        <th class="text-center">期限切れ</th>
-                        <th class="text-center">完了率</th>
-                        <th style="width: 150px;">進捗</th>
-                        <th class="text-center">操作</th>
+                        <th scope="col">科目</th>
+                        <th scope="col" class="text-center">総数</th>
+                        <th scope="col" class="text-center">完了</th>
+                        <th scope="col" class="text-center">未完了</th>
+                        <th scope="col" class="text-center">期限切れ</th>
+                        <th scope="col" class="text-center">完了率</th>
+                        <th scope="col" style="width: 150px;">進捗</th>
+                        <th scope="col" class="text-center">操作</th>
                     </tr>
                 </thead>
                 <tbody id="activeSubjectsBody"></tbody>
@@ -265,7 +215,7 @@
     </div>
     <div class="card-footer d-flex justify-content-between align-items-center">
         <span class="pagination-info" id="activePageInfo"></span>
-        <nav>
+        <nav aria-label="アクティブ科目ページナビゲーション">
             <ul class="pagination pagination-sm mb-0" id="activePagination"></ul>
         </nav>
     </div>
@@ -273,22 +223,22 @@
 
 <div class="card" id="archivedSubjectsCard">
     <div class="card-header d-flex justify-content-between align-items-center">
-        <span><i class="bi bi-archive me-2"></i>アーカイブ済み科目</span>
+        <span><i class="bi bi-archive me-2" aria-hidden="true"></i>アーカイブ済み科目</span>
         <span class="badge bg-secondary" id="archivedCount">0</span>
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
-            <table class="table table-hover mb-0 stats-table">
+            <table class="table table-hover mb-0 stats-table" aria-label="アーカイブ済み科目統計">
                 <thead class="table-light">
                     <tr>
-                        <th>科目</th>
-                        <th class="text-center">総数</th>
-                        <th class="text-center">完了</th>
-                        <th class="text-center">未完了</th>
-                        <th class="text-center">期限切れ</th>
-                        <th class="text-center">完了率</th>
-                        <th style="width: 150px;">進捗</th>
-                        <th class="text-center">操作</th>
+                        <th scope="col">科目</th>
+                        <th scope="col" class="text-center">総数</th>
+                        <th scope="col" class="text-center">完了</th>
+                        <th scope="col" class="text-center">未完了</th>
+                        <th scope="col" class="text-center">期限切れ</th>
+                        <th scope="col" class="text-center">完了率</th>
+                        <th scope="col" style="width: 150px;">進捗</th>
+                        <th scope="col" class="text-center">操作</th>
                     </tr>
                 </thead>
                 <tbody id="archivedSubjectsBody"></tbody>
@@ -297,7 +247,7 @@
     </div>
     <div class="card-footer d-flex justify-content-between align-items-center">
         <span class="pagination-info" id="archivedPageInfo"></span>
-        <nav>
+        <nav aria-label="アーカイブ済み科目ページナビゲーション">
             <ul class="pagination pagination-sm mb-0" id="archivedPagination"></ul>
         </nav>
     </div>
@@ -305,27 +255,25 @@
 
 <div class="card d-none" id="noSubjectsCard">
     <div class="card-body text-center py-5">
-        <i class="bi bi-inbox display-1 text-muted"></i>
+        <i class="bi bi-inbox display-1 text-muted" aria-hidden="true"></i>
         <h4 class="mt-3">科目別の統計データがありません</h4>
         <p class="text-muted">課題を登録して科目を設定すると、ここに統計が表示されます。</p>
     </div>
 </div>
 
-<div id="shareCard">
+<div id="shareCard" aria-hidden="true">
     <div>
         <div class="d-flex align-items-center mb-4">
             <i class="bi bi-journal-check me-2" style="font-size: 1.5rem;"></i>
             <span class="card-title">Super Homework Manager</span>
         </div>
     </div>
-
     <div class="text-center">
         <div style="font-size: 1.5rem; font-weight: bold; margin-bottom: 0.5rem; opacity: 0.9;">期限内完了率</div>
         <div class="rate-display" style="margin-top: 0;">
             {{printf "%.1f" .stats.OnTimeCompletionRate}}<span style="font-size: 2.5rem;">%</span>
         </div>
     </div>
-
     <div class="stats-row">
         <div class="stat-item">
             <span class="stat-label">完了</span>
@@ -342,31 +290,28 @@
     </div>
 </div>
 
-<!-- Share Modal -->
-<div class="modal fade" id="shareModal" tabindex="-1">
+<div class="modal fade" id="shareModal" tabindex="-1" aria-labelledby="shareModalHeading" aria-modal="true" role="dialog">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-share me-2"></i>シェア</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <h5 class="modal-title" id="shareModalHeading"><i class="bi bi-share me-2" aria-hidden="true"></i>シェア</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"></button>
             </div>
             <div class="modal-body text-center">
-                <div id="sharePreviewContainer" class="mb-3" style="max-width: 100%; overflow: hidden;">
-                </div>
+                <div id="sharePreviewContainer" class="mb-3" style="max-width: 100%; overflow: hidden;"></div>
                 <p class="text-muted small mb-3">
                     画像を保存またはコピーして、SNSに貼り付けてください。<br>
-                    <span class="text-danger"><i class="bi bi-info-circle me-1"></i>ブラウザの制限により、自動で画像は添付されません。</span>
+                    <span class="text-danger"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>ブラウザの制限により、自動で画像は添付されません。</span>
                 </p>
                 <div class="d-grid gap-2">
-                    <button class="btn btn-outline-primary" onclick="copyImageToClipboard(this)">
-                        <i class="bi bi-clipboard me-2"></i>画像をコピー
+                    <button class="btn btn-outline-primary" id="copyImageBtn">
+                        <i class="bi bi-clipboard me-2" aria-hidden="true"></i>画像をコピー
                     </button>
                     <a id="downloadLink" class="btn btn-outline-secondary" download="stats.png">
-                        <i class="bi bi-download me-2"></i>画像を保存
+                        <i class="bi bi-download me-2" aria-hidden="true"></i>画像を保存
                     </a>
-                    <a id="twitterShareBtn" href="#" target="_blank" class="btn btn-dark"
-                        style="background-color: #000;">
-                        <i class="bi bi-twitter-x me-2"></i>Xでポストする
+                    <a id="twitterShareBtn" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-dark" style="background-color: #000;">
+                        <i class="bi bi-twitter-x me-2" aria-hidden="true"></i>Xでポストする
                     </a>
                 </div>
             </div>
@@ -381,28 +326,23 @@
 </script>
 <script>
     (function () {
-        var data = JSON.parse(document.getElementById('subjectsData').textContent);
-        var csrfToken = data.csrfToken;
-        var subjects = data.subjects;
-        var PAGE_SIZE = 10;
-        var activeSubjects = subjects.filter(function (s) { return !s.isArchived; });
+        var data            = JSON.parse(document.getElementById('subjectsData').textContent);
+        var csrfToken       = data.csrfToken;
+        var subjects        = data.subjects;
+        var PAGE_SIZE       = 10;
+        var activeSubjects  = subjects.filter(function (s) { return !s.isArchived; });
         var archivedSubjects = subjects.filter(function (s) { return s.isArchived; });
-        var activePage = 1;
-        var archivedPage = 1;
+        var activePage      = 1;
+        var archivedPage    = 1;
+        var _capturedCanvas = null;
 
-        // Share Functionality
         window.generateShareImage = function () {
             var card = document.getElementById('shareCard');
-            // Ensure card is visible for rendering but off-screen
             card.style.display = 'flex';
-
-            html2canvas(card, {
-                backgroundColor: null,
-                scale: 2 // High resolution
-            }).then(canvas => {
+            html2canvas(card, { backgroundColor: null, scale: 2 }).then(function(canvas) {
+                _capturedCanvas = canvas;
                 var imgData = canvas.toDataURL('image/png');
 
-                // Set up preview
                 var previewContainer = document.getElementById('sharePreviewContainer');
                 previewContainer.innerHTML = '';
                 var img = document.createElement('img');
@@ -410,67 +350,51 @@
                 img.style.maxWidth = '100%';
                 img.style.borderRadius = '8px';
                 img.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+                img.alt = '統計シェア画像';
                 previewContainer.appendChild(img);
 
-                // Set up download link
-                var downloadLink = document.getElementById('downloadLink');
-                downloadLink.href = imgData;
+                document.getElementById('downloadLink').href = imgData;
 
-                // Set up Twitter button
                 var text = '私の課題完了状況\n期限内完了率: {{printf "%.1f" .stats.OnTimeCompletionRate}}%\n#SuperHomeworkManager';
-                var twitterBtn = document.getElementById('twitterShareBtn');
-                twitterBtn.href = "https://twitter.com/intent/tweet?text=" + encodeURIComponent(text);
+                document.getElementById('twitterShareBtn').href = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(text);
 
-                // Show modal
-                var modal = new bootstrap.Modal(document.getElementById('shareModal'));
-                modal.show();
+                new bootstrap.Modal(document.getElementById('shareModal')).show();
             });
         };
 
-        // Helper to convert Data URL to Blob
         function dataURLtoBlob(dataurl) {
-            var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
-                bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
-            while (n--) {
-                u8arr[n] = bstr.charCodeAt(n);
-            }
-            return new Blob([u8arr], { type: mime });
+            var arr  = dataurl.split(',');
+            var mime = arr[0].match(/:(.*?);/)[1];
+            var bstr = atob(arr[1]);
+            var n    = bstr.length;
+            var u8   = new Uint8Array(n);
+            while (n--) u8[n] = bstr.charCodeAt(n);
+            return new Blob([u8], { type: mime });
         }
 
-        window.copyImageToClipboard = function (btn) {
-            var canvas = document.querySelector('#sharePreviewContainer img');
-            if (!canvas) return;
+        document.getElementById('copyImageBtn').addEventListener('click', function() {
+            var btn = this;
+            var imgEl = document.querySelector('#sharePreviewContainer img');
+            if (!imgEl) return;
 
-            if (!navigator.clipboard) {
-                alert('このブラウザまたは環境（非HTTPS/非localhost）では、クリップボードへのコピー機能がサポートされていません。\n「画像を保存」を使用してください。');
+            if (!navigator.clipboard || !window.ClipboardItem) {
+                showCopyFeedback('このブラウザではクリップボードへの画像コピーがサポートされていません。「画像を保存」をご利用ください。');
                 return;
             }
 
-            try {
-                var blob = dataURLtoBlob(canvas.src);
-                navigator.clipboard.write([
-                    new ClipboardItem({
-                        'image/png': blob
-                    })
-                ]).then(function () {
-                    var originalText = btn.innerHTML;
-                    btn.innerHTML = '<i class="bi bi-check me-2"></i>コピーしました';
-                    btn.classList.remove('btn-outline-primary');
-                    btn.classList.add('btn-success');
-                    setTimeout(function () {
-                        btn.innerHTML = originalText;
-                        btn.classList.add('btn-outline-primary');
-                        btn.classList.remove('btn-success');
-                    }, 2000);
-                }).catch(function (err) {
-                    console.error('Failed to copy: ', err);
-                    alert('画像のコピーに失敗しました。\nエラー: ' + err.message + '\n「画像を保存」を使用してください。');
-                });
-            } catch (err) {
-                console.error('Failed to create blob: ', err);
-                alert('画像データの生成に失敗しました: ' + err.message);
-            }
-        };
+            var blob = dataURLtoBlob(imgEl.src);
+            navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).then(function() {
+                var orig = btn.innerHTML;
+                btn.innerHTML = '<i class="bi bi-check me-2" aria-hidden="true"></i>コピーしました';
+                btn.classList.replace('btn-outline-primary', 'btn-success');
+                setTimeout(function() {
+                    btn.innerHTML = orig;
+                    btn.classList.replace('btn-success', 'btn-outline-primary');
+                }, 2000);
+            }).catch(function(err) {
+                showCopyFeedback('画像のコピーに失敗しました。「画像を保存」をご利用ください。（' + (err.message || err) + '）');
+            });
+        });
 
         function getRateClass(rate) {
             if (rate >= 80) return 'text-success';
@@ -479,22 +403,22 @@
         }
 
         function renderProgress(completed, pending, overdue, total) {
-            if (total === 0) return '<div class="progress table-progress"></div>';
+            if (total === 0) return '<div class="progress table-progress" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="進捗なし"></div>';
             var cP = (completed / total * 100).toFixed(1);
-            var pP = (pending / total * 100).toFixed(1);
-            var oP = (overdue / total * 100).toFixed(1);
-            return '<div class="progress table-progress">' +
+            var pP = (pending   / total * 100).toFixed(1);
+            var oP = (overdue   / total * 100).toFixed(1);
+            return '<div class="progress table-progress" role="progressbar" aria-valuenow="' + cP + '" aria-valuemin="0" aria-valuemax="100" aria-label="完了' + cP + '%、未完了' + pP + '%、期限切れ' + oP + '%">' +
                 '<div class="progress-bar bg-success" style="width:' + cP + '%" title="完了: ' + completed + '"></div>' +
                 '<div class="progress-bar bg-warning" style="width:' + pP + '%" title="未完了: ' + pending + '"></div>' +
-                '<div class="progress-bar bg-danger" style="width:' + oP + '%" title="期限切れ: ' + overdue + '"></div></div>';
+                '<div class="progress-bar bg-danger"  style="width:' + oP + '%" title="期限切れ: ' + overdue + '"></div></div>';
         }
 
         function renderRow(s, isArchived) {
-            var action = isArchived ?
-                '<form action="/statistics/unarchive-subject" method="POST" class="d-inline"><input type="hidden" name="_csrf" value="' + csrfToken + '"><input type="hidden" name="subject" value="' + s.subject + '"><button type="submit" class="btn btn-sm btn-outline-success" title="復元"><i class="bi bi-arrow-counterclockwise"></i></button></form>' :
-                '<form action="/statistics/archive-subject" method="POST" class="d-inline"><input type="hidden" name="_csrf" value="' + csrfToken + '"><input type="hidden" name="subject" value="' + s.subject + '"><button type="submit" class="btn btn-sm btn-outline-secondary" title="アーカイブ"><i class="bi bi-archive"></i></button></form>';
+            var action = isArchived
+                ? '<form action="/statistics/unarchive-subject" method="POST" class="d-inline"><input type="hidden" name="_csrf" value="' + csrfToken + '"><input type="hidden" name="subject" value="' + XSS.escapeHtml(s.subject) + '"><button type="submit" class="btn btn-sm btn-outline-success" aria-label="' + XSS.escapeHtml(s.subject) + 'を復元"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i></button></form>'
+                : '<form action="/statistics/archive-subject"   method="POST" class="d-inline"><input type="hidden" name="_csrf" value="' + csrfToken + '"><input type="hidden" name="subject" value="' + XSS.escapeHtml(s.subject) + '"><button type="submit" class="btn btn-sm btn-outline-secondary" aria-label="' + XSS.escapeHtml(s.subject) + 'をアーカイブ"><i class="bi bi-archive" aria-hidden="true"></i></button></form>';
             return '<tr class="subject-row">' +
-                '<td><a href="/statistics?subject=' + encodeURIComponent(s.subject) + '" class="text-decoration-none"><i class="bi bi-folder me-1"></i>' + s.subject + '</a></td>' +
+                '<td><a href="/statistics?subject=' + encodeURIComponent(s.subject) + '" class="text-decoration-none"><i class="bi bi-folder me-1" aria-hidden="true"></i>' + XSS.escapeHtml(s.subject) + '</a></td>' +
                 '<td class="text-center">' + s.total + '</td>' +
                 '<td class="text-center text-success">' + s.completed + '</td>' +
                 '<td class="text-center text-warning">' + s.pending + '</td>' +
@@ -510,7 +434,7 @@
             if (total <= 1) return;
             var prev = document.createElement('li');
             prev.className = 'page-item' + (page === 1 ? ' disabled' : '');
-            prev.innerHTML = '<a class="page-link" href="#">&laquo;</a>';
+            prev.innerHTML = '<a class="page-link" href="#" aria-label="前のページ">&laquo;</a>';
             if (page > 1) prev.onclick = function (e) { e.preventDefault(); cb(page - 1); };
             el.appendChild(prev);
             for (var i = 1; i <= total; i++) {
@@ -522,28 +446,28 @@
             }
             var next = document.createElement('li');
             next.className = 'page-item' + (page === total ? ' disabled' : '');
-            next.innerHTML = '<a class="page-link" href="#">&raquo;</a>';
+            next.innerHTML = '<a class="page-link" href="#" aria-label="次のページ">&raquo;</a>';
             if (page < total) next.onclick = function (e) { e.preventDefault(); cb(page + 1); };
             el.appendChild(next);
         }
 
         function renderActiveSubjects() {
-            var start = (activePage - 1) * PAGE_SIZE;
-            var end = Math.min(start + PAGE_SIZE, activeSubjects.length);
+            var start      = (activePage - 1) * PAGE_SIZE;
+            var end        = Math.min(start + PAGE_SIZE, activeSubjects.length);
             var totalPages = Math.ceil(activeSubjects.length / PAGE_SIZE);
             document.getElementById('activeSubjectsBody').innerHTML = activeSubjects.slice(start, end).map(function (s) { return renderRow(s, false); }).join('');
-            document.getElementById('activeCount').textContent = activeSubjects.length;
+            document.getElementById('activeCount').textContent    = activeSubjects.length;
             document.getElementById('activePageInfo').textContent = activeSubjects.length > 0 ? (start + 1) + '-' + end + ' / ' + activeSubjects.length + ' 件' : '0 件';
             renderPagination('activePagination', activePage, totalPages, function (p) { activePage = p; renderActiveSubjects(); });
             document.getElementById('activeSubjectsCard').style.display = activeSubjects.length > 0 ? 'block' : 'none';
         }
 
         function renderArchivedSubjects() {
-            var start = (archivedPage - 1) * PAGE_SIZE;
-            var end = Math.min(start + PAGE_SIZE, archivedSubjects.length);
+            var start      = (archivedPage - 1) * PAGE_SIZE;
+            var end        = Math.min(start + PAGE_SIZE, archivedSubjects.length);
             var totalPages = Math.ceil(archivedSubjects.length / PAGE_SIZE);
             document.getElementById('archivedSubjectsBody').innerHTML = archivedSubjects.slice(start, end).map(function (s) { return renderRow(s, true); }).join('');
-            document.getElementById('archivedCount').textContent = archivedSubjects.length;
+            document.getElementById('archivedCount').textContent    = archivedSubjects.length;
             document.getElementById('archivedPageInfo').textContent = archivedSubjects.length > 0 ? (start + 1) + '-' + end + ' / ' + archivedSubjects.length + ' 件' : '0 件';
             renderPagination('archivedPagination', archivedPage, totalPages, function (p) { archivedPage = p; renderArchivedSubjects(); });
             document.getElementById('archivedSubjectsCard').style.display = archivedSubjects.length > 0 ? 'block' : 'none';
@@ -553,7 +477,7 @@
         renderArchivedSubjects();
         if (activeSubjects.length === 0 && archivedSubjects.length === 0) {
             document.getElementById('noSubjectsCard').classList.remove('d-none');
-            document.getElementById('activeSubjectsCard').style.display = 'none';
+            document.getElementById('activeSubjectsCard').style.display  = 'none';
             document.getElementById('archivedSubjectsCard').style.display = 'none';
         }
     })();

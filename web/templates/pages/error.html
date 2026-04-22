@@ -1,10 +1,18 @@
 {{template "base" .}}
 
 {{define "content"}}
-<div class="text-center py-5">
-    <i class="bi bi-exclamation-triangle display-1 text-danger"></i>
+<div class="text-center py-5" role="main">
+    <i class="bi bi-exclamation-triangle display-1 text-danger" aria-hidden="true"></i>
     <h1 class="mt-4">{{.title}}</h1>
     <p class="lead text-muted">{{.message}}</p>
-    <a href="/" class="btn btn-primary mt-3"><i class="bi bi-house-door me-1"></i>ダッシュボードに戻る</a>
+    <p class="text-muted small">問題が続く場合はページを再読み込みするか、最初からやり直してください。</p>
+    <div class="d-flex justify-content-center gap-2 mt-3">
+        <button type="button" class="btn btn-outline-secondary" onclick="location.reload()">
+            <i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i>再読み込み
+        </button>
+        <a href="/" class="btn btn-primary">
+            <i class="bi bi-house-door me-1" aria-hidden="true"></i>ダッシュボードに戻る
+        </a>
+    </div>
 </div>
 {{end}}

@@ -2,94 +2,42 @@
 
 {{define "head"}}
 <style>
-    @keyframes pulse-bg {
-
-        0%,
-        100% {
-            background-color: #fff3cd;
-        }
-
-        50% {
-            background-color: #ffe69c;
-        }
-    }
-
-    @keyframes pulse-bg-danger {
-
-        0%,
-        100% {
-            background-color: #f8d7da;
-        }
-
-        50% {
-            background-color: #f5c2c7;
-        }
-    }
-
-    @keyframes blink-banner {
-
-        0%,
-        100% {
-            opacity: 1;
-        }
-
-        50% {
-            opacity: 0.7;
-        }
-    }
-
-    .anxiety-warning {
-        animation: pulse-bg 2s infinite;
-    }
-
-    .anxiety-danger {
-        animation: pulse-bg-danger 1s infinite;
-    }
-
-    .urgent-banner {
-        z-index: 1030;
-        animation: blink-banner 1s infinite;
-    }
-
-    .urgent-banner-danger {
-        background: linear-gradient(90deg, #dc3545, #c82333);
-        color: white;
-    }
-
-    .urgent-banner-warning {
-        background: linear-gradient(90deg, #fd7e14, #e06c00);
-        color: white;
-    }
-
-    .urgent-countdown {
-        font-size: 1.5rem;
-        font-weight: bold;
-    }
-
     .dashboard-stat-card {
         transition: transform 0.2s ease, box-shadow 0.2s ease;
         cursor: pointer;
     }
-
     .dashboard-stat-card:hover {
         transform: translateY(-4px);
         box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+    .urgent-banner-danger {
+        background: linear-gradient(90deg, #dc3545, #c82333);
+        color: white;
+    }
+    .urgent-banner-warning {
+        background: linear-gradient(90deg, #fd7e14, #e06c00);
+        color: white;
+    }
+    .urgent-countdown {
+        font-size: 1.5rem;
+        font-weight: bold;
     }
 </style>
 {{end}}
 
 {{define "content"}}
-<div id="urgentBanner" class="urgent-banner py-3 text-center d-none">
-    <div class="container">
-        <i class="bi bi-exclamation-octagon-fill me-2"></i>
+<div id="urgentBanner" class="urgent-banner py-3 text-center d-none" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="container position-relative">
+        <i class="bi bi-exclamation-octagon-fill me-2" aria-hidden="true"></i>
         <span id="urgentMessage"></span>
         <div class="urgent-countdown mt-1">
-            <i class="bi bi-stopwatch"></i> <span id="urgentCountdown"></span>
+            <i class="bi bi-stopwatch" aria-hidden="true"></i> <span id="urgentCountdown"></span>
         </div>
+        <button type="button" id="closeBanner" class="btn-close btn-close-white position-absolute top-0 end-0" aria-label="バナーを閉じる" onclick="document.getElementById('urgentBanner').classList.add('d-none')"></button>
     </div>
 </div>
 
-<h1 class="mb-4"><i class="bi bi-house-door me-2"></i>ダッシュボード</h1>
+<h1 class="mb-4"><i class="bi bi-house-door me-2" aria-hidden="true"></i>ダッシュボード</h1>
 
 <div class="row g-4 mb-4">
     <div class="col-6 col-md-3">
@@ -101,7 +49,7 @@
                             <h6 class="text-white-50">未完了の課題</h6>
                             <h2 class="mb-0">{{.stats.TotalPending}}</h2>
                         </div>
-                        <i class="bi bi-list-task display-4 opacity-50"></i>
+                        <i class="bi bi-list-task display-4 opacity-50" aria-hidden="true"></i>
                     </div>
                 </div>
             </div>
@@ -116,7 +64,7 @@
                             <h6 class="text-dark-50">今日が期限</h6>
                             <h2 class="mb-0">{{.stats.DueToday}}</h2>
                         </div>
-                        <i class="bi bi-calendar-event display-4 opacity-50"></i>
+                        <i class="bi bi-calendar-event display-4 opacity-50" aria-hidden="true"></i>
                     </div>
                 </div>
             </div>
@@ -131,7 +79,7 @@
                             <h6 class="text-white-50">今週が期限</h6>
                             <h2 class="mb-0">{{.stats.DueThisWeek}}</h2>
                         </div>
-                        <i class="bi bi-calendar-week display-4 opacity-50"></i>
+                        <i class="bi bi-calendar-week display-4 opacity-50" aria-hidden="true"></i>
                     </div>
                 </div>
             </div>
@@ -146,7 +94,7 @@
                             <h6 class="text-white-50">期限切れ</h6>
                             <h2 class="mb-0">{{.stats.Overdue}}</h2>
                         </div>
-                        <i class="bi bi-exclamation-triangle display-4 opacity-50"></i>
+                        <i class="bi bi-exclamation-triangle display-4 opacity-50" aria-hidden="true"></i>
                     </div>
                 </div>
             </div>
@@ -158,20 +106,22 @@
     {{if .overdue}}
     <div class="col-lg-6">
         <div class="card border-danger">
-            <div class="card-header bg-danger text-white"><i class="bi bi-exclamation-triangle me-2"></i>期限切れの課題</div>
+            <div class="card-header bg-danger text-white"><i class="bi bi-exclamation-triangle me-2" aria-hidden="true"></i>期限切れの課題</div>
             <ul class="list-group list-group-flush">
                 {{range .overdue}}
-                <li class="list-group-item d-flex justify-content-between align-items-center"
-                    data-priority="{{.Priority}}" data-due="{{.DueDate.UnixMilli}}">
+                <li class="list-group-item d-flex justify-content-between align-items-center" data-priority="{{.Priority}}" data-due="{{.DueDate.UnixMilli}}">
                     <div>
                         {{if .Subject}}<span class="badge bg-secondary me-1">{{.Subject}}</span>{{end}}
-                        {{if eq .Priority "high"}}<span class="badge bg-danger me-1">重要</span>{{end}}
+                        {{if eq .Priority "high"}}<span class="badge bg-danger me-1">高<span class="visually-hidden">（重要度：高）</span></span>{{end}}
                         <strong>{{.Title}}</strong>
                         <br><small class="text-danger">{{formatDateTime .DueDate}}</small>
                     </div>
-                    <form action="/assignments/{{.ID}}/toggle" method="POST"><input type="hidden" name="_csrf"
-                            value="{{$.csrfToken}}"><button type="submit" class="btn btn-sm btn-success"
-                            title="完了にする"><i class="bi bi-check-lg"></i></button></form>
+                    <form action="/assignments/{{.ID}}/toggle" method="POST">
+                        <input type="hidden" name="_csrf" value="{{$.csrfToken}}">
+                        <button type="submit" class="btn btn-sm btn-success" aria-label="{{.Title}}を完了にする">
+                            <i class="bi bi-check-lg" aria-hidden="true"></i>
+                        </button>
+                    </form>
                 </li>
                 {{end}}
             </ul>
@@ -181,20 +131,22 @@
     {{if .dueToday}}
     <div class="col-lg-6">
         <div class="card border-warning">
-            <div class="card-header bg-warning text-dark"><i class="bi bi-calendar-event me-2"></i>今日が期限</div>
+            <div class="card-header bg-warning text-dark"><i class="bi bi-calendar-event me-2" aria-hidden="true"></i>今日が期限</div>
             <ul class="list-group list-group-flush">
                 {{range .dueToday}}
-                <li class="list-group-item d-flex justify-content-between align-items-center"
-                    data-priority="{{.Priority}}" data-due="{{.DueDate.UnixMilli}}">
+                <li class="list-group-item d-flex justify-content-between align-items-center" data-priority="{{.Priority}}" data-due="{{.DueDate.UnixMilli}}">
                     <div>
                         {{if .Subject}}<span class="badge bg-secondary me-1">{{.Subject}}</span>{{end}}
-                        {{if eq .Priority "high"}}<span class="badge bg-danger me-1">重要</span>{{end}}
+                        {{if eq .Priority "high"}}<span class="badge bg-danger me-1">高<span class="visually-hidden">（重要度：高）</span></span>{{end}}
                         <strong>{{.Title}}</strong>
                         <br><small class="text-muted">{{formatDateTime .DueDate}}</small>
                     </div>
-                    <form action="/assignments/{{.ID}}/toggle" method="POST"><input type="hidden" name="_csrf"
-                            value="{{$.csrfToken}}"><button type="submit" class="btn btn-sm btn-success"
-                            title="完了にする"><i class="bi bi-check-lg"></i></button></form>
+                    <form action="/assignments/{{.ID}}/toggle" method="POST">
+                        <input type="hidden" name="_csrf" value="{{$.csrfToken}}">
+                        <button type="submit" class="btn btn-sm btn-success" aria-label="{{.Title}}を完了にする">
+                            <i class="bi bi-check-lg" aria-hidden="true"></i>
+                        </button>
+                    </form>
                 </li>
                 {{end}}
             </ul>
@@ -204,20 +156,22 @@
     {{if .upcoming}}
     <div class="col-lg-6">
         <div class="card border-info">
-            <div class="card-header bg-info text-white"><i class="bi bi-calendar-week me-2"></i>今週の課題</div>
+            <div class="card-header bg-info text-white"><i class="bi bi-calendar-week me-2" aria-hidden="true"></i>今週の課題</div>
             <ul class="list-group list-group-flush">
                 {{range .upcoming}}
-                <li class="list-group-item d-flex justify-content-between align-items-center"
-                    data-priority="{{.Priority}}" data-due="{{.DueDate.UnixMilli}}">
+                <li class="list-group-item d-flex justify-content-between align-items-center" data-priority="{{.Priority}}" data-due="{{.DueDate.UnixMilli}}">
                     <div>
                         {{if .Subject}}<span class="badge bg-secondary me-1">{{.Subject}}</span>{{end}}
-                        {{if eq .Priority "high"}}<span class="badge bg-danger me-1">重要</span>{{end}}
+                        {{if eq .Priority "high"}}<span class="badge bg-danger me-1">高<span class="visually-hidden">（重要度：高）</span></span>{{end}}
                         <strong>{{.Title}}</strong>
                         <br><small class="text-muted">{{formatDateTime .DueDate}}</small>
                     </div>
-                    <form action="/assignments/{{.ID}}/toggle" method="POST"><input type="hidden" name="_csrf"
-                            value="{{$.csrfToken}}"><button type="submit" class="btn btn-sm btn-success"
-                            title="完了にする"><i class="bi bi-check-lg"></i></button></form>
+                    <form action="/assignments/{{.ID}}/toggle" method="POST">
+                        <input type="hidden" name="_csrf" value="{{$.csrfToken}}">
+                        <button type="submit" class="btn btn-sm btn-success" aria-label="{{.Title}}を完了にする">
+                            <i class="bi bi-check-lg" aria-hidden="true"></i>
+                        </button>
+                    </form>
                 </li>
                 {{end}}
             </ul>
@@ -228,10 +182,10 @@
 
 {{if and (not .overdue) (not .dueToday) (not .upcoming)}}
 <div class="text-center py-5">
-    <i class="bi bi-emoji-smile display-1 text-success"></i>
+    <i class="bi bi-emoji-smile display-1 text-success" aria-hidden="true"></i>
     <h3 class="mt-3">今週の課題はありません！</h3>
     <p class="text-muted">新しい課題を登録しましょう</p>
-    <a href="/assignments/new" class="btn btn-primary"><i class="bi bi-plus-circle me-1"></i>課題を登録</a>
+    <a href="/assignments/new" class="btn btn-primary"><i class="bi bi-plus-circle me-1" aria-hidden="true"></i>課題を登録</a>
 </div>
 {{end}}
 {{end}}
@@ -239,20 +193,20 @@
 {{define "scripts"}}
 <script>
     (function () {
-        var banner = document.getElementById('urgentBanner');
-        var message = document.getElementById('urgentMessage');
+        var banner    = document.getElementById('urgentBanner');
+        var message   = document.getElementById('urgentMessage');
         var countdown = document.getElementById('urgentCountdown');
-        var body = document.body;
+
+        var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
         var items = document.querySelectorAll('[data-priority="high"][data-due]');
         var mostUrgent = null;
         var mostUrgentDue = Infinity;
 
         items.forEach(function (item) {
-            var due = parseInt(item.dataset.due);
-            var now = Date.now();
+            var due  = parseInt(item.dataset.due);
+            var now  = Date.now();
             var diff = due - now;
-
             if (diff > 0 && diff < mostUrgentDue) {
                 mostUrgentDue = diff;
                 var titleEl = item.querySelector('strong');
@@ -260,57 +214,45 @@
             }
         });
 
-        var hasOverdueHigh = false;
-        var overdueItems = document.querySelectorAll('[data-priority="high"]');
-        overdueItems.forEach(function (item) {
+        var hasOverdueHigh = Array.from(document.querySelectorAll('[data-priority="high"]')).some(function(item) {
             var due = parseInt(item.dataset.due);
-            if (due && due < Date.now()) {
-                hasOverdueHigh = true;
-            }
+            return due && due < Date.now();
         });
 
         if (hasOverdueHigh) {
             banner.classList.remove('d-none');
             banner.classList.add('urgent-banner-danger');
-            message.innerHTML = '🚨 <strong>期限切れの重要課題があります！</strong>';
+            if (!reduced) banner.classList.add('anxiety-danger');
+            message.textContent = '期限切れの重要課題があります！';
             countdown.textContent = '今すぐ対応してください！';
-            body.classList.add('anxiety-danger');
         } else if (mostUrgent && mostUrgentDue < 24 * 60 * 60 * 1000) {
             banner.classList.remove('d-none');
             banner.classList.add('urgent-banner-danger');
-            message.innerHTML = '🚨 <strong>「' + mostUrgent.title + '」の期限が迫っています！</strong>';
-            body.classList.add('anxiety-danger');
+            if (!reduced) banner.classList.add('anxiety-danger');
+            message.textContent = '「' + mostUrgent.title + '」の期限が迫っています！';
             updateCountdown();
-            setInterval(updateCountdown, 1000);
+            if (!reduced) setInterval(updateCountdown, 1000);
         } else if (mostUrgent && mostUrgentDue < 3 * 24 * 60 * 60 * 1000) {
             banner.classList.remove('d-none');
             banner.classList.add('urgent-banner-warning');
-            message.innerHTML = '⚠️ <strong>「' + mostUrgent.title + '」の期限が近づいています</strong>';
-            body.classList.add('anxiety-warning');
+            if (!reduced) banner.classList.add('anxiety-warning');
+            message.textContent = '「' + mostUrgent.title + '」の期限が近づいています';
             updateCountdown();
-            setInterval(updateCountdown, 1000);
+            if (!reduced) setInterval(updateCountdown, 60000);
         }
 
         function updateCountdown() {
             if (!mostUrgent) return;
-            var now = Date.now();
-            var diff = mostUrgent.due - now;
-
-            if (diff <= 0) {
-                countdown.textContent = '期限切れ！';
-                return;
-            }
-
-            var days = Math.floor(diff / 86400000);
+            var diff = mostUrgent.due - Date.now();
+            if (diff <= 0) { countdown.textContent = '期限切れ！'; return; }
+            var days  = Math.floor(diff / 86400000);
             var hours = Math.floor((diff % 86400000) / 3600000);
-            var mins = Math.floor((diff % 3600000) / 60000);
-            var secs = Math.floor((diff % 60000) / 1000);
-
-            var text = 'あと ';
+            var mins  = Math.floor((diff % 3600000) / 60000);
+            var secs  = Math.floor((diff % 60000) / 1000);
+            var text  = 'あと ';
             if (days > 0) text += days + '日 ' + hours + '時間 ' + mins + '分 ' + secs + '秒';
             else if (hours > 0) text += hours + '時間 ' + mins + '分 ' + secs + '秒';
             else text += mins + '分 ' + secs + '秒';
-
             countdown.textContent = text;
         }
     })();

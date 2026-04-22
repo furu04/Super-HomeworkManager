@@ -248,6 +248,7 @@ func Setup(cfg *config.Config) *gin.Engine {
 		auth.POST("/assignments/:id/toggle", assignmentHandler.Toggle)
 		auth.POST("/assignments/:id/delete", assignmentHandler.Delete)
 
+		auth.GET("/assignments/export", assignmentHandler.ExportCSV)
 		auth.GET("/statistics", assignmentHandler.Statistics)
 		auth.POST("/statistics/archive-subject", assignmentHandler.ArchiveSubject)
 		auth.POST("/statistics/unarchive-subject", assignmentHandler.UnarchiveSubject)

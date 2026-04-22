@@ -5,15 +5,15 @@
     <div class="col-md-7 col-lg-6">
         <div class="card shadow">
             <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-shield-lock me-2"></i>2段階認証の設定</h5>
+                <h5 class="mb-0"><i class="bi bi-shield-lock me-2" aria-hidden="true"></i>2段階認証の設定</h5>
             </div>
             <div class="card-body p-4">
                 {{if .error}}
-                <div class="alert alert-danger">{{.error}}</div>
+                <div class="alert alert-danger" role="alert">{{.error}}</div>
                 {{end}}
 
-                <div class="alert alert-info">
-                    <i class="bi bi-info-circle me-1"></i>
+                <div class="alert alert-info" role="note">
+                    <i class="bi bi-info-circle me-1" aria-hidden="true"></i>
                     Google Authenticator、Authy などの認証アプリを使用してください。
                 </div>
 
@@ -25,17 +25,16 @@
                 </ol>
 
                 <div class="text-center mb-4">
-                    <img src="data:image/png;base64,{{.qrCode}}" alt="QRコード" class="border rounded"
-                        style="max-width:200px">
+                    <img src="data:image/png;base64,{{.qrCode}}" alt="2段階認証設定用QRコード" class="border rounded" style="max-width:200px">
+                    <p class="text-muted small mt-2">QRコードを再スキャンしたい場合はページを再読み込みしてください。</p>
                 </div>
 
                 <div class="mb-4">
-                    <label class="form-label fw-bold">シークレットキー（手動入力の場合）</label>
+                    <label class="form-label fw-bold" for="secretKey">シークレットキー（手動入力の場合）</label>
                     <div class="input-group">
-                        <input type="text" class="form-control font-monospace" id="secretKey" value="{{.secret}}"
-                            readonly>
-                        <button class="btn btn-outline-secondary" type="button" onclick="copySecret()" title="コピー">
-                            <i class="bi bi-clipboard"></i>
+                        <input type="text" class="form-control font-monospace" id="secretKey" value="{{.secret}}" readonly aria-label="シークレットキー">
+                        <button class="btn btn-outline-secondary" type="button" id="copySecretBtn" aria-label="シークレットキーをコピー">
+                            <i class="bi bi-clipboard" aria-hidden="true"></i>
                         </button>
                     </div>
                     <div class="form-text">認証アプリで「手動入力」を選択し、このキーを入力してください。</div>
@@ -45,19 +44,16 @@
                     {{.csrfField}}
                     <div class="mb-3">
                         <label for="totp_password" class="form-label fw-bold">現在のパスワード</label>
-                        <input type="password" class="form-control" id="totp_password" name="password"
-                            placeholder="パスワードを入力" required>
+                        <input type="password" class="form-control" id="totp_password" name="password" placeholder="パスワードを入力" required autocomplete="current-password">
                     </div>
                     <div class="mb-3">
                         <label for="totp_code" class="form-label fw-bold">認証コードで確認</label>
-                        <input type="text" class="form-control form-control-lg text-center" id="totp_code"
-                            name="totp_code" placeholder="000000" maxlength="6" pattern="[0-9]{6}" inputmode="numeric"
-                            autocomplete="off" autofocus required>
+                        <input type="text" class="form-control form-control-lg text-center" id="totp_code" name="totp_code" placeholder="000000" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" autocomplete="off" autofocus required>
                         <div class="form-text">認証アプリに表示された6桁のコードを入力してください。</div>
                     </div>
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-shield-check me-1"></i>有効化
+                            <i class="bi bi-shield-check me-1" aria-hidden="true"></i>有効化
                         </button>
                         <a href="/profile" class="btn btn-outline-secondary">キャンセル</a>
                     </div>
@@ -70,14 +66,23 @@
 
 {{define "scripts"}}
 <script>
-    function copySecret() {
-        const el = document.getElementById('secretKey');
-        el.select();
-        navigator.clipboard.writeText(el.value).then(() => {
-            const btn = el.nextElementSibling;
-            btn.innerHTML = '<i class="bi bi-check-lg"></i>';
-            setTimeout(() => { btn.innerHTML = '<i class="bi bi-clipboard"></i>'; }, 2000);
+    document.getElementById('copySecretBtn').addEventListener('click', function() {
+        var btn = this;
+        var val = document.getElementById('secretKey').value;
+        if (!navigator.clipboard) {
+            showCopyFeedback('クリップボードがサポートされていません。手動でコピーしてください。');
+            return;
+        }
+        navigator.clipboard.writeText(val).then(function() {
+            btn.innerHTML = '<i class="bi bi-check-lg" aria-hidden="true"></i>';
+            btn.setAttribute('aria-label', 'コピーしました');
+            setTimeout(function() {
+                btn.innerHTML = '<i class="bi bi-clipboard" aria-hidden="true"></i>';
+                btn.setAttribute('aria-label', 'シークレットキーをコピー');
+            }, 2000);
+        }).catch(function(err) {
+            showCopyFeedback('コピーに失敗しました: ' + (err.message || err));
         });
-    }
+    });
 </script>
 {{end}}

@@ -3,7 +3,7 @@
 {{define "content"}}
 <div class="row justify-content-center">
     <div class="col-lg-10">
-        <h1 class="mb-4"><i class="bi bi-person me-2"></i>プロフィール</h1>
+        <h1 class="mb-4"><i class="bi bi-person me-2" aria-hidden="true"></i>プロフィール</h1>
         <div class="row g-4">
             <div class="col-md-6">
                 <div class="card">
@@ -11,25 +11,23 @@
                         <h5 class="mb-0">アカウント情報</h5>
                     </div>
                     <div class="card-body">
-                        {{if .error}}<div class="alert alert-danger">{{.error}}</div>{{end}}
-                        {{if .success}}<div class="alert alert-success">{{.success}}</div>{{end}}
+                        {{if .error}}<div class="alert alert-danger" role="alert">{{.error}}</div>{{end}}
+                        {{if .success}}<div class="alert alert-success" role="status">{{.success}}</div>{{end}}
                         <form method="POST" action="/profile">
                             {{.csrfField}}
                             <div class="mb-3">
-                                <label for="email" class="form-label">メールアドレス</label>
-                                <input type="email" class="form-control" id="email" value="{{.user.Email}}" disabled>
+                                <p class="form-label mb-1 text-muted small">メールアドレス</p>
+                                <p class="mb-0 fw-bold">{{.user.Email}}</p>
                             </div>
                             <div class="mb-3">
                                 <label for="name" class="form-label">名前</label>
-                                <input type="text" class="form-control" id="name" name="name" value="{{.user.Name}}"
-                                    required>
+                                <input type="text" class="form-control" id="name" name="name" value="{{.user.Name}}" required>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label">ロール</label>
-                                <input type="text" class="form-control"
-                                    value="{{if eq .user.Role `admin`}}管理者{{else}}ユーザー{{end}}" disabled>
+                                <p class="form-label mb-1 text-muted small">ロール</p>
+                                <p class="mb-0 fw-bold">{{if eq .user.Role "admin"}}管理者{{else}}ユーザー{{end}}</p>
                             </div>
-                            <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>更新</button>
+                            <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1" aria-hidden="true"></i>更新</button>
                         </form>
                     </div>
                 </div>
@@ -40,108 +38,98 @@
                         <h5 class="mb-0">パスワード変更</h5>
                     </div>
                     <div class="card-body">
-                        {{if .passwordError}}<div class="alert alert-danger">{{.passwordError}}</div>{{end}}
-                        {{if .passwordSuccess}}<div class="alert alert-success">{{.passwordSuccess}}</div>{{end}}
+                        {{if .passwordError}}<div class="alert alert-danger" role="alert">{{.passwordError}}</div>{{end}}
+                        {{if .passwordSuccess}}<div class="alert alert-success" role="status">{{.passwordSuccess}}</div>{{end}}
                         <form method="POST" action="/profile/password">
                             {{.csrfField}}
                             <div class="mb-3">
                                 <label for="old_password" class="form-label">現在のパスワード</label>
-                                <input type="password" class="form-control" id="old_password" name="old_password"
-                                    required>
+                                <input type="password" class="form-control" id="old_password" name="old_password" required autocomplete="current-password">
                             </div>
                             <div class="mb-3">
                                 <label for="new_password" class="form-label">新しいパスワード</label>
-                                <input type="password" class="form-control" id="new_password" name="new_password"
-                                    required minlength="6">
-                                <div class="form-text">6文字以上</div>
+                                <input type="password" class="form-control" id="new_password" name="new_password" required minlength="8" autocomplete="new-password">
+                                <div class="form-text">8文字以上</div>
                             </div>
                             <div class="mb-3">
                                 <label for="confirm_password" class="form-label">新しいパスワード（確認）</label>
-                                <input type="password" class="form-control" id="confirm_password"
-                                    name="confirm_password" required>
+                                <input type="password" class="form-control" id="confirm_password" name="confirm_password" required minlength="8" autocomplete="new-password">
                             </div>
-                            <button type="submit" class="btn btn-warning"><i class="bi bi-key me-1"></i>パスワード変更</button>
+                            <button type="submit" class="btn btn-primary"><i class="bi bi-key me-1" aria-hidden="true"></i>パスワード変更</button>
                         </form>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- 2段階認証設定 -->
         <div class="card mt-4">
             <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-shield-lock me-2"></i>2段階認証（2FA）</h5>
+                <h5 class="mb-0"><i class="bi bi-shield-lock me-2" aria-hidden="true"></i>2段階認証（2FA）</h5>
             </div>
             <div class="card-body">
-                {{if .totpError}}<div class="alert alert-danger">{{.totpError}}</div>{{end}}
-                {{if .totpSuccess}}<div class="alert alert-success">{{.totpSuccess}}</div>{{end}}
+                {{if .totpError}}<div class="alert alert-danger" role="alert">{{.totpError}}</div>{{end}}
+                {{if .totpSuccess}}<div class="alert alert-success" role="status">{{.totpSuccess}}</div>{{end}}
                 {{if .user.TOTPEnabled}}
                 <div class="d-flex align-items-center mb-3">
-                    <span class="badge bg-success me-2"><i class="bi bi-check-lg me-1"></i>有効</span>
+                    <span class="badge bg-success me-2"><i class="bi bi-check-lg me-1" aria-hidden="true"></i>有効</span>
                     <span class="text-muted">2段階認証が有効になっています</span>
                 </div>
                 <form method="POST" action="/profile/totp/disable">
                     {{.csrfField}}
                     <div class="mb-3">
                         <label for="totp_disable_password" class="form-label">現在のパスワードを入力して無効化</label>
-                        <input type="password" class="form-control" id="totp_disable_password" name="password"
-                            placeholder="パスワード" required style="max-width:320px">
+                        <input type="password" class="form-control" id="totp_disable_password" name="password" placeholder="パスワード" required style="max-width:320px" autocomplete="current-password">
                     </div>
                     <button type="submit" class="btn btn-danger">
-                        <i class="bi bi-shield-x me-1"></i>2段階認証を無効化
+                        <i class="bi bi-shield-x me-1" aria-hidden="true"></i>2段階認証を無効化
                     </button>
                 </form>
                 {{else}}
                 <div class="d-flex align-items-center mb-3">
-                    <span class="badge bg-secondary me-2"><i class="bi bi-x-lg me-1"></i>無効</span>
+                    <span class="badge bg-secondary me-2"><i class="bi bi-x-lg me-1" aria-hidden="true"></i>無効</span>
                     <span class="text-muted">2段階認証が設定されていません</span>
                 </div>
                 <p class="text-muted small">2段階認証を有効にするとセキュリティが向上します。Google Authenticator などのアプリが必要です。</p>
                 <a href="/profile/totp/setup" class="btn btn-primary">
-                    <i class="bi bi-shield-plus me-1"></i>2段階認証を設定する
+                    <i class="bi bi-shield-plus me-1" aria-hidden="true"></i>2段階認証を設定する
                 </a>
                 {{end}}
             </div>
         </div>
 
-        <!-- 通知設定 -->
         <div class="card mt-4">
             <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-bell me-2"></i>通知設定</h5>
+                <h5 class="mb-0"><i class="bi bi-bell me-2" aria-hidden="true"></i>通知設定</h5>
             </div>
             <div class="card-body">
-                {{if .notifyError}}<div class="alert alert-danger">{{.notifyError}}</div>{{end}}
-                {{if .notifySuccess}}<div class="alert alert-success">{{.notifySuccess}}</div>{{end}}
+                {{if .notifyError}}<div class="alert alert-danger" role="alert">{{.notifyError}}</div>{{end}}
+                {{if .notifySuccess}}<div class="alert alert-success" role="status">{{.notifySuccess}}</div>{{end}}
                 <form method="POST" action="/profile/notifications">
                     {{.csrfField}}
                     <div class="row">
                         <div class="col-md-6">
-                            <h6 class="mb-3"><i class="bi bi-telegram me-1"></i>Telegram</h6>
+                            <h6 class="mb-3"><i class="bi bi-telegram me-1" aria-hidden="true"></i>Telegram</h6>
                             <div class="form-check form-switch mb-2">
-                                <input class="form-check-input" type="checkbox" id="telegram_enabled"
-                                    name="telegram_enabled" {{if .notifySettings.TelegramEnabled}}checked{{end}}>
+                                <input class="form-check-input" type="checkbox" id="telegram_enabled" name="telegram_enabled" {{if .notifySettings.TelegramEnabled}}checked{{end}}>
                                 <label class="form-check-label" for="telegram_enabled">Telegram通知を有効化</label>
                             </div>
                             <div class="mb-3">
                                 <label for="telegram_chat_id" class="form-label">Chat ID</label>
-                                <input type="text" class="form-control" id="telegram_chat_id" name="telegram_chat_id"
-                                    value="{{.notifySettings.TelegramChatID}}" placeholder="例: 123456789">
+                                <input type="text" class="form-control" id="telegram_chat_id" name="telegram_chat_id" value="{{.notifySettings.TelegramChatID}}" placeholder="例: 123456789">
                                 <div class="form-text">
-                                    Botに<code>/start</code>を送信後、<a href="https://t.me/userinfobot"
-                                        target="_blank">@userinfobot</a>でIDを確認
+                                    Botに<code>/start</code>を送信後、<a href="https://t.me/userinfobot" target="_blank" rel="noopener noreferrer">@userinfobot</a>でIDを確認
                                 </div>
                             </div>
                         </div>
                     </div>
                     <hr class="my-3">
                     <div class="form-check form-switch mb-3">
-                        <input class="form-check-input" type="checkbox" id="notify_on_create" name="notify_on_create"
-                            {{if .notifySettings.NotifyOnCreate}}checked{{end}}>
+                        <input class="form-check-input" type="checkbox" id="notify_on_create" name="notify_on_create" {{if .notifySettings.NotifyOnCreate}}checked{{end}}>
                         <label class="form-check-label" for="notify_on_create">
-                            <i class="bi bi-plus-circle me-1"></i>課題追加時に通知する
+                            <i class="bi bi-plus-circle me-1" aria-hidden="true"></i>課題追加時に通知する
                         </label>
                     </div>
-                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>通知設定を保存</button>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1" aria-hidden="true"></i>通知設定を保存</button>
                 </form>
             </div>
         </div>

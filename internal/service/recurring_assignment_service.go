@@ -413,16 +413,15 @@ func (s *RecurringAssignmentService) generateNextIfPending(recurring *models.Rec
 		return nil
 	}
 
-	pendingCount, err := s.recurringRepo.CountPendingByRecurringID(recurring.ID)
-	if err != nil || pendingCount > 0 {
-		return err
-	}
-
 	latest, err := s.recurringRepo.GetLatestAssignmentByRecurringID(recurring.ID)
 	if err != nil {
 		return err
 	}
 	if latest == nil {
+		return nil
+	}
+
+	if !latest.IsCompleted && !latest.IsOverdue() {
 		return nil
 	}
 

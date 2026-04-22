@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/csv"
 	"net/http"
 	"strconv"
 	"strings"
@@ -108,6 +109,8 @@ func (h *AssignmentHandler) New(c *gin.Context) {
 	role, _ := c.Get(middleware.UserRoleKey)
 	name, _ := c.Get(middleware.UserNameKey)
 	now := time.Now()
+	tomorrow := now.AddDate(0, 0, 1)
+	defaultDue := time.Date(tomorrow.Year(), tomorrow.Month(), tomorrow.Day(), 23, 59, 0, 0, now.Location())
 
 	RenderHTML(c, http.StatusOK, "assignments/new.html", gin.H{
 		"title":          "課題登録",
@@ -115,6 +118,7 @@ func (h *AssignmentHandler) New(c *gin.Context) {
 		"userName":       name,
 		"currentWeekday": int(now.Weekday()),
 		"currentDay":     now.Day(),
+		"defaultDueDate": defaultDue.Format("2006-01-02T15:04"),
 	})
 }
 
@@ -217,6 +221,12 @@ func (h *AssignmentHandler) Create(c *gin.Context) {
 
 		dueTime := dueDate.Format("15:04")
 
+		generationLeadDays := 0
+		if v, err := strconv.Atoi(c.PostForm("generation_lead_days")); err == nil && v >= 0 {
+			generationLeadDays = v
+		}
+		generationLeadTime := c.PostForm("generation_lead_time")
+
 		recurringService := service.NewRecurringAssignmentService()
 		input := service.CreateRecurringAssignmentInput{
 			Title:                 title,
@@ -233,6 +243,8 @@ func (h *AssignmentHandler) Create(c *gin.Context) {
 			EndDate:               endDate,
 			ReminderEnabled:       reminderEnabled,
 			UrgentReminderEnabled: urgentReminderEnabled,
+			GenerationLeadDays:    generationLeadDays,
+			GenerationLeadTime:    generationLeadTime,
 			FirstDueDate:          dueDate,
 		}
 
@@ -353,7 +365,10 @@ func (h *AssignmentHandler) Toggle(c *gin.Context) {
 	userID := h.getUserID(c)
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
 
-	h.assignmentService.ToggleComplete(userID, uint(id))
+	assignment, err := h.assignmentService.ToggleComplete(userID, uint(id))
+	if err == nil && assignment.IsCompleted && assignment.RecurringAssignmentID != nil {
+		h.recurringService.TriggerForRecurring(*assignment.RecurringAssignmentID)
+	}
 
 	referer := c.Request.Referer()
 	if referer == "" {
@@ -457,6 +472,69 @@ func (h *AssignmentHandler) UnarchiveSubject(c *gin.Context) {
 	}
 
 	c.Redirect(http.StatusFound, "/statistics?include_archived=true")
+}
+
+func (h *AssignmentHandler) ExportCSV(c *gin.Context) {
+	userID := h.getUserID(c)
+
+	var from, to *time.Time
+	if fromStr := c.Query("from"); fromStr != "" {
+		if t, err := time.ParseInLocation("2006-01-02", fromStr, time.Local); err == nil {
+			from = &t
+		}
+	}
+	if toStr := c.Query("to"); toStr != "" {
+		if t, err := time.ParseInLocation("2006-01-02", toStr, time.Local); err == nil {
+			to = &t
+		}
+	}
+	subject := c.Query("subject")
+
+	assignments, err := h.assignmentService.GetForExport(userID, from, to, subject)
+	if err != nil {
+		c.String(http.StatusInternalServerError, "エクスポートに失敗しました")
+		return
+	}
+
+	filename := "assignments_" + time.Now().Format("20060102") + ".csv"
+	c.Header("Content-Type", "text/csv; charset=utf-8")
+	c.Header("Content-Disposition", "attachment; filename=\""+filename+"\"")
+
+	w := csv.NewWriter(c.Writer)
+	// UTF-8 BOM for Excel compatibility
+	c.Writer.Write([]byte("\xef\xbb\xbf"))
+
+	headers := []string{"ID", "タイトル", "科目", "説明", "重要度", "提出期限", "完了", "完了日時", "登録日時"}
+	w.Write(headers)
+
+	priorityLabel := map[string]string{"low": "低", "medium": "中", "high": "高"}
+	for _, a := range assignments {
+		completed := "未完了"
+		if a.IsCompleted {
+			completed = "完了"
+		}
+		completedAt := ""
+		if a.CompletedAt != nil {
+			completedAt = a.CompletedAt.Format("2006/01/02 15:04")
+		}
+		label := priorityLabel[a.Priority]
+		if label == "" {
+			label = a.Priority
+		}
+		w.Write([]string{
+			strconv.FormatUint(uint64(a.ID), 10),
+			a.Title,
+			a.Subject,
+			a.Description,
+			label,
+			a.DueDate.Format("2006/01/02 15:04"),
+			completed,
+			completedAt,
+			a.CreatedAt.Format("2006/01/02 15:04"),
+		})
+	}
+
+	w.Flush()
 }
 
 func (h *AssignmentHandler) StopRecurring(c *gin.Context) {
@@ -580,6 +658,12 @@ func (h *AssignmentHandler) UpdateRecurring(c *gin.Context) {
 		}
 	}
 
+	generationLeadDays := 0
+	if v, err := strconv.Atoi(c.PostForm("generation_lead_days")); err == nil && v >= 0 {
+		generationLeadDays = v
+	}
+	generationLeadTime := c.PostForm("generation_lead_time")
+
 	input := service.UpdateRecurringInput{
 		Title:              &title,
 		Description:        &description,
@@ -594,6 +678,8 @@ func (h *AssignmentHandler) UpdateRecurring(c *gin.Context) {
 		EndCount:           endCount,
 		EndDate:            endDate,
 		EditBehavior:       editBehavior,
+		GenerationLeadDays: &generationLeadDays,
+		GenerationLeadTime: &generationLeadTime,
 	}
 
 	_, err = h.recurringService.Update(userID, uint(id), input)

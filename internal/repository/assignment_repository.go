@@ -21,6 +21,15 @@ func (r *AssignmentRepository) Create(assignment *models.Assignment) error {
 	return r.db.Create(assignment).Error
 }
 
+func (r *AssignmentRepository) FindByRecurringAndDue(recurringID uint, dueDate time.Time) (*models.Assignment, error) {
+	var a models.Assignment
+	err := r.db.Where("recurring_assignment_id = ? AND due_date = ?", recurringID, dueDate).First(&a).Error
+	if err == gorm.ErrRecordNotFound {
+		return nil, nil
+	}
+	return &a, err
+}
+
 func (r *AssignmentRepository) FindByID(id uint) (*models.Assignment, error) {
 	var assignment models.Assignment
 	err := r.db.First(&assignment, id).Error
@@ -334,6 +343,22 @@ func (r *AssignmentRepository) GetArchivedSubjects(userID uint) ([]string, error
 		Distinct("subject").
 		Pluck("subject", &subjects).Error
 	return subjects, err
+}
+
+func (r *AssignmentRepository) FindForExport(userID uint, from, to *time.Time, subject string) ([]models.Assignment, error) {
+	var assignments []models.Assignment
+	q := r.db.Where("user_id = ?", userID)
+	if from != nil {
+		q = q.Where("due_date >= ?", *from)
+	}
+	if to != nil {
+		q = q.Where("due_date < ?", to.AddDate(0, 0, 1))
+	}
+	if subject != "" {
+		q = q.Where("subject = ?", subject)
+	}
+	err := q.Order("due_date ASC").Find(&assignments).Error
+	return assignments, err
 }
 
 func (r *AssignmentRepository) GetSubjectsByUserIDWithArchived(userID uint, includeArchived bool) ([]string, error) {

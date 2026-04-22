@@ -378,6 +378,10 @@ func (s *AssignmentService) GetStatistics(userID uint, filter StatisticsFilter) 
 	return summary, nil
 }
 
+func (s *AssignmentService) GetForExport(userID uint, from, to *time.Time, subject string) ([]models.Assignment, error) {
+	return s.assignmentRepo.FindForExport(userID, from, to, subject)
+}
+
 func (s *AssignmentService) ArchiveSubject(userID uint, subject string) error {
 	return s.assignmentRepo.ArchiveBySubject(userID, subject)
 }

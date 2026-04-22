@@ -5,83 +5,71 @@
     <div class="col-lg-6">
         <div class="card shadow">
             <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-plus-circle me-2"></i>課題登録</h5>
+                <h5 class="mb-0"><i class="bi bi-plus-circle me-2" aria-hidden="true"></i>課題登録</h5>
             </div>
             <div class="card-body">
-                {{if .error}}<div class="alert alert-danger">{{.error}}</div>{{end}}
+                {{if .error}}<div class="alert alert-danger" role="alert">{{.error}}</div>{{end}}
                 <form method="POST" action="/assignments">
                     {{.csrfField}}
                     <div class="mb-3">
-                        <label for="title" class="form-label">タイトル <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="title" name="title" value="{{.formTitle}}" required
-                            autofocus>
+                        <label for="title" class="form-label">タイトル <span class="text-danger" aria-hidden="true">*</span><span class="visually-hidden">（必須）</span></label>
+                        <input type="text" class="form-control" id="title" name="title" value="{{.formTitle}}" required autofocus>
                     </div>
                     <div class="mb-3">
                         <label for="subject" class="form-label">科目</label>
-                        <input type="text" class="form-control" id="subject" name="subject" value="{{.subject}}"
-                            placeholder="例: 数学、英語、情報">
+                        <input type="text" class="form-control" id="subject" name="subject" value="{{.subject}}" placeholder="例: 数学、英語、情報">
                     </div>
                     <div class="mb-3">
                         <label for="priority" class="form-label">重要度</label>
                         <select class="form-select" id="priority" name="priority">
-                            <option value="low" {{if eq .priority "low" }}selected{{end}}>小</option>
-                            <option value="medium" {{if not (or (eq .priority "low" ) (eq .priority "high"
-                                ))}}selected{{end}}>中</option>
-                            <option value="high" {{if eq .priority "high" }}selected{{end}}>大</option>
+                            <option value="low"    {{if eq .priority "low"   }}selected{{end}}>低</option>
+                            <option value="medium" {{if not (or (eq .priority "low") (eq .priority "high"))}}selected{{end}}>中</option>
+                            <option value="high"   {{if eq .priority "high"  }}selected{{end}}>高</option>
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label for="due_date" class="form-label">提出期限 <span class="text-danger">*</span></label>
-                        <input type="datetime-local" class="form-control" id="due_date" name="due_date" required>
+                        <label for="due_date" class="form-label">提出期限 <span class="text-danger" aria-hidden="true">*</span><span class="visually-hidden">（必須）</span></label>
+                        <input type="datetime-local" class="form-control" id="due_date" name="due_date" value="{{.defaultDueDate}}" required>
                     </div>
                     <div class="mb-3">
                         <label for="description" class="form-label">説明</label>
-                        <textarea class="form-control" id="description" name="description"
-                            rows="3">{{.description}}</textarea>
+                        <textarea class="form-control" id="description" name="description" rows="3">{{.description}}</textarea>
                     </div>
-                    <!-- 通知設定 -->
                     <div class="card bg-light mb-3">
                         <div class="card-body py-2">
-                            <h6 class="mb-2"><i class="bi bi-bell me-1"></i>通知設定</h6>
-                            <!-- 督促通知 -->
+                            <h6 class="mb-2"><i class="bi bi-bell me-1" aria-hidden="true"></i>通知設定</h6>
                             <div class="form-check form-switch mb-2">
-                                <input class="form-check-input" type="checkbox" id="urgent_reminder_enabled"
-                                    name="urgent_reminder_enabled" checked>
+                                <input class="form-check-input" type="checkbox" id="urgent_reminder_enabled" name="urgent_reminder_enabled" checked>
                                 <label class="form-check-label" for="urgent_reminder_enabled">
                                     督促通知（期限3時間前から繰り返し通知）
                                 </label>
                             </div>
                             <div class="form-text small mb-2">
-                                重要度により間隔が変わります：大=10分、中=30分、小=1時間
+                                重要度により通知間隔が変わります：高=10分ごと、中=30分ごと、低=1時間ごと
                             </div>
                             <hr class="my-2">
                             <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="reminder_enabled"
-                                    name="reminder_enabled" onchange="toggleReminderDate(this)">
+                                <input class="form-check-input" type="checkbox" id="reminder_enabled" name="reminder_enabled" onchange="toggleReminderDate(this)">
                                 <label class="form-check-label" for="reminder_enabled">
                                     リマインダー（指定日時に通知）
                                 </label>
                             </div>
                             <div class="mt-2" id="reminder_at_group" style="display: none;">
                                 <label for="reminder_at" class="form-label small">通知日時</label>
-                                <input type="datetime-local" class="form-control form-control-sm" id="reminder_at"
-                                    name="reminder_at">
+                                <input type="datetime-local" class="form-control form-control-sm" id="reminder_at" name="reminder_at">
                             </div>
                         </div>
                     </div>
                     <div class="card bg-light mb-3">
-                        <div class="card-header py-2" style="cursor: pointer;" data-bs-toggle="collapse"
-                            data-bs-target="#recurringSettings">
-                            <h6 class="mb-0"><i class="bi bi-arrow-repeat me-1"></i>繰り返し設定 <i
-                                    class="bi bi-chevron-down float-end"></i></h6>
+                        <div class="card-header py-2" style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#recurringSettings" aria-expanded="false" aria-controls="recurringSettings">
+                            <h6 class="mb-0"><i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i>繰り返し設定 <i class="bi bi-chevron-down float-end" aria-hidden="true"></i></h6>
                         </div>
                         <div class="collapse" id="recurringSettings">
                             <div class="card-body py-2">
                                 <div class="row mb-2">
                                     <div class="col-6">
                                         <label for="recurrence_type" class="form-label small">繰り返しタイプ</label>
-                                        <select class="form-select form-select-sm" id="recurrence_type"
-                                            name="recurrence_type" onchange="updateRecurrenceOptions()">
+                                        <select class="form-select form-select-sm" id="recurrence_type" name="recurrence_type" onchange="updateRecurrenceOptions()">
                                             <option value="none" selected>なし</option>
                                             <option value="daily">毎日</option>
                                             <option value="weekly">毎週</option>
@@ -91,89 +79,105 @@
                                     <div class="col-6" id="interval_group" style="display: none;">
                                         <label for="recurrence_interval" class="form-label small">間隔</label>
                                         <div class="input-group input-group-sm">
-                                            <input type="number" class="form-control" id="recurrence_interval"
-                                                name="recurrence_interval" value="1" min="1" max="12">
+                                            <input type="number" class="form-control" id="recurrence_interval" name="recurrence_interval" value="1" min="1" max="12" onchange="updateLeadDaysMax()">
                                             <span class="input-group-text" id="interval_label">週</span>
                                         </div>
                                     </div>
                                 </div>
-                                <div id="weekday_group" style="display: none;" class="mb-2">
+                                <div id="weekday_group" class="mb-2">
                                     <label class="form-label small">曜日</label>
-                                    <div class="btn-group btn-group-sm w-100" role="group">
-                                        <input type="radio" class="btn-check" name="recurrence_weekday" id="wd0"
-                                            value="0" {{if eq .currentWeekday 0}}checked{{end}}>
+                                    <div class="btn-group btn-group-sm w-100" role="group" aria-label="曜日選択">
+                                        <input type="radio" class="btn-check" name="recurrence_weekday" id="wd0" value="0" {{if eq .currentWeekday 0}}checked{{end}}>
                                         <label class="btn btn-outline-primary" for="wd0">日</label>
-                                        <input type="radio" class="btn-check" name="recurrence_weekday" id="wd1"
-                                            value="1" {{if eq .currentWeekday 1}}checked{{end}}>
+                                        <input type="radio" class="btn-check" name="recurrence_weekday" id="wd1" value="1" {{if eq .currentWeekday 1}}checked{{end}}>
                                         <label class="btn btn-outline-primary" for="wd1">月</label>
-                                        <input type="radio" class="btn-check" name="recurrence_weekday" id="wd2"
-                                            value="2" {{if eq .currentWeekday 2}}checked{{end}}>
+                                        <input type="radio" class="btn-check" name="recurrence_weekday" id="wd2" value="2" {{if eq .currentWeekday 2}}checked{{end}}>
                                         <label class="btn btn-outline-primary" for="wd2">火</label>
-                                        <input type="radio" class="btn-check" name="recurrence_weekday" id="wd3"
-                                            value="3" {{if eq .currentWeekday 3}}checked{{end}}>
+                                        <input type="radio" class="btn-check" name="recurrence_weekday" id="wd3" value="3" {{if eq .currentWeekday 3}}checked{{end}}>
                                         <label class="btn btn-outline-primary" for="wd3">水</label>
-                                        <input type="radio" class="btn-check" name="recurrence_weekday" id="wd4"
-                                            value="4" {{if eq .currentWeekday 4}}checked{{end}}>
+                                        <input type="radio" class="btn-check" name="recurrence_weekday" id="wd4" value="4" {{if eq .currentWeekday 4}}checked{{end}}>
                                         <label class="btn btn-outline-primary" for="wd4">木</label>
-                                        <input type="radio" class="btn-check" name="recurrence_weekday" id="wd5"
-                                            value="5" {{if eq .currentWeekday 5}}checked{{end}}>
+                                        <input type="radio" class="btn-check" name="recurrence_weekday" id="wd5" value="5" {{if eq .currentWeekday 5}}checked{{end}}>
                                         <label class="btn btn-outline-primary" for="wd5">金</label>
-                                        <input type="radio" class="btn-check" name="recurrence_weekday" id="wd6"
-                                            value="6" {{if eq .currentWeekday 6}}checked{{end}}>
+                                        <input type="radio" class="btn-check" name="recurrence_weekday" id="wd6" value="6" {{if eq .currentWeekday 6}}checked{{end}}>
                                         <label class="btn btn-outline-primary" for="wd6">土</label>
                                     </div>
                                 </div>
-                                <div id="day_group" style="display: none;" class="mb-2">
+                                <div id="day_group" class="mb-2">
                                     <label for="recurrence_day" class="form-label small">日</label>
-                                    <select class="form-select form-select-sm" id="recurrence_day"
-                                        name="recurrence_day">
+                                    <select class="form-select form-select-sm" id="recurrence_day" name="recurrence_day">
                                         {{range $i := seq 1 31}}
                                         <option value="{{$i}}" {{if eq $.currentDay $i}}selected{{end}}>{{$i}}日</option>
                                         {{end}}
                                     </select>
                                 </div>
+                                <div id="lead_days_group" style="display: none;" class="mb-2">
+                                    <label class="form-label small">リストに追加するタイミング</label>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="input-group input-group-sm" style="width: 120px;">
+                                            <input type="number" class="form-control" id="generation_lead_days" name="generation_lead_days" value="0" min="0" max="0">
+                                            <span class="input-group-text">日前</span>
+                                        </div>
+                                        <input type="time" class="form-control form-control-sm" id="generation_lead_time" name="generation_lead_time" style="width: 110px;">
+                                    </div>
+                                    <div class="form-text small text-muted" id="lead_days_hint"></div>
+                                </div>
                                 <div id="end_group" style="display: none;">
                                     <label class="form-label small">終了条件</label>
                                     <div class="form-check form-check-inline">
-                                        <input class="form-check-input" type="radio" name="end_type" id="end_never"
-                                            value="never" checked>
+                                        <input class="form-check-input" type="radio" name="end_type" id="end_never" value="never" checked>
                                         <label class="form-check-label small" for="end_never">無期限</label>
                                     </div>
                                     <div class="form-check form-check-inline">
-                                        <input class="form-check-input" type="radio" name="end_type" id="end_count"
-                                            value="count">
+                                        <input class="form-check-input" type="radio" name="end_type" id="end_count" value="count">
                                         <label class="form-check-label small" for="end_count">回数</label>
                                     </div>
                                     <div class="form-check form-check-inline">
-                                        <input class="form-check-input" type="radio" name="end_type" id="end_date"
-                                            value="date">
+                                        <input class="form-check-input" type="radio" name="end_type" id="end_date" value="date">
                                         <label class="form-check-label small" for="end_date">終了日</label>
                                     </div>
                                     <div class="mt-1" id="end_count_group" style="display: none;">
-                                        <input type="number" class="form-control form-control-sm" id="end_count_value"
-                                            name="end_count" value="10" min="1" style="width: 100px;">
+                                        <input type="number" class="form-control form-control-sm" id="end_count_value" name="end_count" value="10" min="1" style="width: 100px;">
                                     </div>
                                     <div class="mt-1" id="end_date_group" style="display: none;">
-                                        <input type="date" class="form-control form-control-sm" id="end_date_value"
-                                            name="end_date" style="width: 150px;">
+                                        <input type="date" class="form-control form-control-sm" id="end_date_value" name="end_date" style="width: 150px;">
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1" aria-hidden="true"></i>登録</button>
+                        <a href="/assignments" class="btn btn-outline-secondary">キャンセル</a>
+                    </div>
+                </form>
             </div>
-            <div class="d-flex gap-2">
-                <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>登録</button>
-                <a href="/assignments" class="btn btn-outline-secondary">キャンセル</a>
-            </div>
-            </form>
         </div>
     </div>
-</div>
 </div>
 <script>
     function toggleReminderDate(checkbox) {
         document.getElementById('reminder_at_group').style.display = checkbox.checked ? 'block' : 'none';
+    }
+    function getLeadDaysMax() {
+        const type = document.getElementById('recurrence_type').value;
+        const interval = parseInt(document.getElementById('recurrence_interval').value) || 1;
+        if (type === 'daily') return interval;
+        if (type === 'weekly') return interval * 7;
+        if (type === 'monthly') return interval * 28;
+        return 0;
+    }
+    function updateLeadDaysMax() {
+        const max = getLeadDaysMax();
+        const input = document.getElementById('generation_lead_days');
+        input.max = max;
+        if (parseInt(input.value) > max) input.value = max;
+        const type = document.getElementById('recurrence_type').value;
+        const labels = { daily: '日', weekly: '週', monthly: 'ヶ月' };
+        const interval = document.getElementById('recurrence_interval').value;
+        document.getElementById('lead_days_hint').textContent =
+            max === 0 ? '間隔が1日のため、事前追加は設定できません' :
+            `最大${max}日前まで指定可能（繰り返し間隔${interval}${labels[type]}以内）`;
     }
     function updateRecurrenceOptions() {
         const type = document.getElementById('recurrence_type').value;
@@ -181,17 +185,24 @@
         document.getElementById('interval_group').style.display = isRecurring ? 'block' : 'none';
         document.getElementById('weekday_group').style.display = type === 'weekly' ? 'block' : 'none';
         document.getElementById('day_group').style.display = type === 'monthly' ? 'block' : 'none';
+        document.getElementById('lead_days_group').style.display = isRecurring ? 'block' : 'none';
         document.getElementById('end_group').style.display = isRecurring ? 'block' : 'none';
         const label = document.getElementById('interval_label');
-        if (type === 'daily') label.textContent = '日';
-        else if (type === 'weekly') label.textContent = '週';
-        else if (type === 'monthly') label.textContent = '月';
+        if (label) {
+            if (type === 'daily') label.textContent = '日';
+            else if (type === 'weekly') label.textContent = '週';
+            else if (type === 'monthly') label.textContent = '月';
+        }
+        updateLeadDaysMax();
     }
-    document.querySelectorAll('input[name="end_type"]').forEach(radio => {
+    document.querySelectorAll('input[name="end_type"]').forEach(function(radio) {
         radio.addEventListener('change', function () {
             document.getElementById('end_count_group').style.display = this.value === 'count' ? 'block' : 'none';
             document.getElementById('end_date_group').style.display = this.value === 'date' ? 'block' : 'none';
         });
+    });
+    document.getElementById('recurringSettings').addEventListener('show.bs.collapse', function () {
+        updateLeadDaysMax();
     });
 </script>
 {{end}}

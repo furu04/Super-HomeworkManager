@@ -2,24 +2,22 @@
 
 {{define "content"}}
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <div class="d-flex align-items-center">
-        <h4 class="mb-0 fw-bold"><i class="bi bi-arrow-repeat me-2"></i>繰り返し設定一覧</h4>
-    </div>
+    <h4 class="mb-0 fw-bold"><i class="bi bi-arrow-repeat me-2" aria-hidden="true"></i>繰り返し設定一覧</h4>
     <a href="/assignments" class="btn btn-sm btn-outline-secondary">
-        <i class="bi bi-arrow-left me-1"></i>課題一覧に戻る
+        <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>課題一覧に戻る
     </a>
 </div>
 
 <div class="card shadow-sm">
     <div class="table-responsive">
-        <table class="table table-hover mb-0">
+        <table class="table table-hover mb-0" aria-label="繰り返し設定一覧">
             <thead class="table-light">
                 <tr>
-                    <th class="ps-3">タイトル</th>
-                    <th>科目</th>
-                    <th>繰り返し</th>
-                    <th>状態</th>
-                    <th class="text-end pe-3">操作</th>
+                    <th scope="col" class="ps-3">タイトル</th>
+                    <th scope="col">科目</th>
+                    <th scope="col">繰り返し</th>
+                    <th scope="col">状態</th>
+                    <th scope="col" class="text-end pe-3">操作</th>
                 </tr>
             </thead>
             <tbody>
@@ -38,9 +36,7 @@
                         <span class="text-muted">-</span>
                         {{end}}
                     </td>
-                    <td>
-                        <span class="text-dark">{{recurringSummary .}}</span>
-                    </td>
+                    <td><span class="text-dark">{{recurringSummary .}}</span></td>
                     <td>
                         {{if .IsActive}}
                         <span class="badge bg-success">有効</span>
@@ -49,15 +45,19 @@
                         {{end}}
                     </td>
                     <td class="text-end pe-3">
-                        <a href="/recurring/{{.ID}}/edit" class="btn btn-sm btn-outline-primary">
-                            <i class="bi bi-pencil"></i>
+                        <a href="/recurring/{{.ID}}/edit" class="btn btn-sm btn-outline-primary" aria-label="{{.Title}}を編集">
+                            <i class="bi bi-pencil" aria-hidden="true"></i>
                         </a>
                     </td>
                 </tr>
                 {{else}}
                 <tr>
-                    <td colspan="5" class="text-center py-4 text-muted">
-                        繰り返し設定がありません
+                    <td colspan="5" class="text-center py-5">
+                        <i class="bi bi-arrow-repeat display-4 text-muted" aria-hidden="true"></i>
+                        <p class="mt-2 mb-1 text-muted fw-bold">繰り返し設定がありません</p>
+                        <a href="/assignments/new" class="btn btn-sm btn-primary mt-1">
+                            <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>繰り返し課題を作成する
+                        </a>
                     </td>
                 </tr>
                 {{end}}

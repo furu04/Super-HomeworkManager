@@ -76,13 +76,19 @@ func Connect(dbConfig config.DatabaseConfig, debug bool) error {
 }
 
 func Migrate() error {
-	return DB.AutoMigrate(
+	if err := DB.AutoMigrate(
 		&models.User{},
 		&models.Assignment{},
 		&models.RecurringAssignment{},
 		&models.APIKey{},
 		&models.UserNotificationSettings{},
-	)
+	); err != nil {
+		return err
+	}
+
+	return DB.Model(&models.RecurringAssignment{}).
+		Where("recurrence_type = ? AND generation_lead_days = 0", models.RecurrenceWeekly).
+		Update("generation_lead_days", 7).Error
 }
 
 func GetDB() *gorm.DB {

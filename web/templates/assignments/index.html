@@ -142,7 +142,7 @@
                                 <a href="/assignments/{{.ID}}/edit" class="text-primary text-decoration-none btn-touch d-inline-flex align-items-center" aria-label="編集">
                                     <i class="bi bi-pencil-fill" aria-hidden="true"></i>
                                 </a>
-                                {{if .RecurringAssignmentID}}
+                                {{if .RecurringAssignment}}
                                 <button type="button" class="btn btn-link p-0 text-danger text-decoration-none border-0 bg-transparent btn-touch" onclick="showDeleteRecurringModal({{.ID}}, {{.RecurringAssignmentID}})" aria-label="削除">
                                     <i class="bi bi-trash-fill" aria-hidden="true"></i>
                                 </button>

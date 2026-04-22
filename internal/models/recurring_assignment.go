@@ -45,6 +45,8 @@ type RecurringAssignment struct {
 	GeneratedCount int        `gorm:"default:0" json:"generated_count"`
 	EditBehavior   string     `gorm:"not null;default:this_only" json:"edit_behavior"`
 
+	GenerationLeadDays    int            `gorm:"default:0" json:"generation_lead_days"`
+	GenerationLeadTime   string         `gorm:"default:''" json:"generation_lead_time"`
 	ReminderEnabled       bool           `gorm:"default:false" json:"reminder_enabled"`
 	ReminderOffset        *int           `json:"reminder_offset,omitempty"`
 	UrgentReminderEnabled bool           `gorm:"default:true" json:"urgent_reminder_enabled"`

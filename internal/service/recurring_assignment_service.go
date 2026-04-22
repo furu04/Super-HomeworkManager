@@ -16,6 +16,7 @@ var (
 	ErrRecurringUnauthorized       = errors.New("unauthorized")
 	ErrInvalidRecurrenceType       = errors.New("invalid recurrence type")
 	ErrInvalidEndType              = errors.New("invalid end type")
+	ErrLeadDaysTooLarge            = errors.New("generation_lead_days must be less than the recurrence interval")
 )
 
 type RecurringAssignmentService struct {
@@ -47,6 +48,8 @@ type CreateRecurringAssignmentInput struct {
 	ReminderEnabled       bool
 	ReminderOffset        *int
 	UrgentReminderEnabled bool
+	GenerationLeadDays    int
+	GenerationLeadTime    string
 	FirstDueDate          time.Time
 }
 
@@ -61,6 +64,13 @@ func (s *RecurringAssignmentService) Create(userID uint, input CreateRecurringAs
 
 	if input.RecurrenceInterval < 1 {
 		input.RecurrenceInterval = 1
+	}
+
+	if input.GenerationLeadDays > 0 {
+		maxLead := maxGenerationLeadDays(input.RecurrenceType, input.RecurrenceInterval)
+		if input.GenerationLeadDays > maxLead {
+			return nil, ErrLeadDaysTooLarge
+		}
 	}
 	if input.EditBehavior == "" {
 		input.EditBehavior = models.EditBehaviorThisOnly
@@ -84,6 +94,8 @@ func (s *RecurringAssignmentService) Create(userID uint, input CreateRecurringAs
 		ReminderEnabled:       input.ReminderEnabled,
 		ReminderOffset:        input.ReminderOffset,
 		UrgentReminderEnabled: input.UrgentReminderEnabled,
+		GenerationLeadDays:    input.GenerationLeadDays,
+		GenerationLeadTime:    input.GenerationLeadTime,
 		IsActive:              true,
 		GeneratedCount:        0,
 	}
@@ -137,6 +149,8 @@ type UpdateRecurringInput struct {
 	ReminderEnabled       *bool
 	ReminderOffset        *int
 	UrgentReminderEnabled *bool
+	GenerationLeadDays    *int
+	GenerationLeadTime    *string
 }
 
 func (s *RecurringAssignmentService) Update(userID, recurringID uint, input UpdateRecurringInput) (*models.RecurringAssignment, error) {
@@ -194,6 +208,18 @@ func (s *RecurringAssignmentService) Update(userID, recurringID uint, input Upda
 	}
 	if input.EndDate != nil {
 		recurring.EndDate = input.EndDate
+	}
+	if input.GenerationLeadDays != nil && *input.GenerationLeadDays >= 0 {
+		if *input.GenerationLeadDays > 0 {
+			maxLead := maxGenerationLeadDays(recurring.RecurrenceType, recurring.RecurrenceInterval)
+			if *input.GenerationLeadDays > maxLead {
+				return nil, ErrLeadDaysTooLarge
+			}
+		}
+		recurring.GenerationLeadDays = *input.GenerationLeadDays
+	}
+	if input.GenerationLeadTime != nil {
+		recurring.GenerationLeadTime = *input.GenerationLeadTime
 	}
 
 	if err := s.recurringRepo.Update(recurring); err != nil {
@@ -366,31 +392,60 @@ func (s *RecurringAssignmentService) GenerateNextAssignments() error {
 	}
 
 	for _, recurring := range recurrings {
-		pendingCount, err := s.recurringRepo.CountPendingByRecurringID(recurring.ID)
-		if err != nil {
+		if err := s.generateNextIfPending(&recurring); err != nil {
 			continue
-		}
-
-		if pendingCount == 0 {
-			latest, err := s.recurringRepo.GetLatestAssignmentByRecurringID(recurring.ID)
-			if err != nil {
-				continue
-			}
-
-			var nextDueDate time.Time
-			if latest != nil {
-				nextDueDate = recurring.CalculateNextDueDate(latest.DueDate)
-			} else {
-				nextDueDate = time.Now()
-			}
-
-			if nextDueDate.After(time.Now()) {
-				s.generateAssignment(&recurring, nextDueDate)
-			}
 		}
 	}
 
 	return nil
+}
+
+func (s *RecurringAssignmentService) TriggerForRecurring(recurringID uint) error {
+	recurring, err := s.recurringRepo.FindByID(recurringID)
+	if err != nil {
+		return nil
+	}
+	return s.generateNextIfPending(recurring)
+}
+
+func (s *RecurringAssignmentService) generateNextIfPending(recurring *models.RecurringAssignment) error {
+	if !recurring.ShouldGenerateNext() {
+		return nil
+	}
+
+	pendingCount, err := s.recurringRepo.CountPendingByRecurringID(recurring.ID)
+	if err != nil || pendingCount > 0 {
+		return err
+	}
+
+	latest, err := s.recurringRepo.GetLatestAssignmentByRecurringID(recurring.ID)
+	if err != nil {
+		return err
+	}
+	if latest == nil {
+		return nil
+	}
+
+	nextDueDate := recurring.CalculateNextDueDate(latest.DueDate)
+
+	if recurring.GenerationLeadDays > 0 {
+		generationAt := nextDueDate.AddDate(0, 0, -recurring.GenerationLeadDays)
+		if recurring.GenerationLeadTime != "" {
+			parts := strings.Split(recurring.GenerationLeadTime, ":")
+			if len(parts) == 2 {
+				hour, _ := strconv.Atoi(parts[0])
+				min, _ := strconv.Atoi(parts[1])
+				generationAt = time.Date(generationAt.Year(), generationAt.Month(), generationAt.Day(), hour, min, 0, 0, generationAt.Location())
+			}
+		} else {
+			generationAt = time.Date(generationAt.Year(), generationAt.Month(), generationAt.Day(), 0, 0, 0, 0, generationAt.Location())
+		}
+		if time.Now().Before(generationAt) {
+			return nil
+		}
+	}
+
+	return s.generateAssignment(recurring, nextDueDate)
 }
 
 func (s *RecurringAssignmentService) generateAssignment(recurring *models.RecurringAssignment, dueDate time.Time) error {
@@ -403,6 +458,14 @@ func (s *RecurringAssignmentService) generateAssignment(recurring *models.Recurr
 		}
 	}
 
+	existing, err := s.assignmentRepo.FindByRecurringAndDue(recurring.ID, dueDate)
+	if err != nil {
+		return err
+	}
+	if existing != nil {
+		return nil
+	}
+
 	var reminderAt *time.Time
 	if recurring.ReminderEnabled && recurring.ReminderOffset != nil {
 		t := dueDate.Add(-time.Duration(*recurring.ReminderOffset) * time.Minute)
@@ -410,7 +473,7 @@ func (s *RecurringAssignmentService) generateAssignment(recurring *models.Recurr
 	}
 
 	assignment := &models.Assignment{
-		UserID:                userID(recurring.UserID),
+		UserID:                recurring.UserID,
 		Title:                 recurring.Title,
 		Description:           recurring.Description,
 		Subject:               recurring.Subject,
@@ -430,8 +493,17 @@ func (s *RecurringAssignmentService) generateAssignment(recurring *models.Recurr
 	return s.recurringRepo.Update(recurring)
 }
 
-func userID(id uint) uint {
-	return id
+
+func maxGenerationLeadDays(recurrenceType string, interval int) int {
+	switch recurrenceType {
+	case models.RecurrenceDaily:
+		return interval
+	case models.RecurrenceWeekly:
+		return interval * 7
+	case models.RecurrenceMonthly:
+		return interval * 28
+	}
+	return 0
 }
 
 func isValidRecurrenceType(t string) bool {

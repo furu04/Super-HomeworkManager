@@ -25,11 +25,27 @@ func getFuncMap() template.FuncMap {
 		"formatDate": func(t time.Time) string {
 			return t.Format("2006/01/02")
 		},
-		"formatDateTime": func(t time.Time) string {
-			return t.Format("2006/01/02 15:04")
+		"formatDateTime": func(t interface{}) string {
+			switch v := t.(type) {
+			case time.Time:
+				return v.Format("2006/01/02 15:04")
+			case *time.Time:
+				if v != nil {
+					return v.Format("2006/01/02 15:04")
+				}
+			}
+			return ""
 		},
-		"formatDateInput": func(t time.Time) string {
-			return t.Format("2006-01-02T15:04")
+		"formatDateInput": func(t interface{}) string {
+			switch v := t.(type) {
+			case time.Time:
+				return v.Format("2006-01-02T15:04")
+			case *time.Time:
+				if v != nil {
+					return v.Format("2006-01-02T15:04")
+				}
+			}
+			return ""
 		},
 		"isOverdue": func(t time.Time, completed bool) bool {
 			return !completed && time.Now().After(t)

@@ -14,6 +14,7 @@ type Assignment struct {
 	Subject                string     `json:"subject"`
 	Priority               string     `gorm:"not null;default:medium" json:"priority"`
 	DueDate                time.Time  `gorm:"not null" json:"due_date"`
+	SoftDueDate            *time.Time `json:"soft_due_date,omitempty"`
 	IsCompleted            bool       `gorm:"default:false" json:"is_completed"`
 	IsArchived             bool       `gorm:"default:false;index" json:"is_archived"`
 	CompletedAt            *time.Time `json:"completed_at,omitempty"`
@@ -23,7 +24,6 @@ type Assignment struct {
 	UrgentReminderEnabled  bool       `gorm:"default:true" json:"urgent_reminder_enabled"`
 	LastUrgentReminderSent *time.Time `json:"last_urgent_reminder_sent,omitempty"`
 
-	// Recurring assignment reference
 	RecurringAssignmentID *uint                `gorm:"index" json:"recurring_assignment_id,omitempty"`
 	RecurringAssignment   *RecurringAssignment `gorm:"foreignKey:RecurringAssignmentID" json:"-"`
 
@@ -32,6 +32,13 @@ type Assignment struct {
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 
 	User *User `gorm:"foreignKey:UserID" json:"user,omitempty"`
+}
+
+func (a *Assignment) GetEffectiveSoftDueDate() time.Time {
+	if a.SoftDueDate != nil {
+		return *a.SoftDueDate
+	}
+	return a.DueDate.Add(-48 * time.Hour)
 }
 
 func (a *Assignment) IsOverdue() bool {

@@ -170,10 +170,11 @@ func (s *NotificationService) SendUrgentReminder(userID uint, assignment *models
 		return err
 	}
 
-	timeRemaining := time.Until(assignment.DueDate)
+	softDue := assignment.GetEffectiveSoftDueDate()
+	timeRemaining := time.Until(softDue)
 	var timeStr string
 	if timeRemaining < 0 {
-		timeStr = "期限切れ！"
+		timeStr = "自分の期限切れ！"
 	} else if timeRemaining < time.Hour {
 		timeStr = fmt.Sprintf("あと%d分", int(timeRemaining.Minutes()))
 	} else {
@@ -191,12 +192,13 @@ func (s *NotificationService) SendUrgentReminder(userID uint, assignment *models
 	}
 
 	message := fmt.Sprintf(
-		"%s 督促通知！\n\n【%s】\n科目: %s\n期限: %s (%s)\n\n完了したらアプリで完了ボタンを押してください！",
+		"%s 督促通知！\n\n【%s】\n科目: %s\n自分の期限: %s (%s)\nガチ期限: %s\n\n完了したらアプリで完了ボタンを押してください！",
 		priorityEmoji,
 		assignment.Title,
 		assignment.Subject,
-		assignment.DueDate.Format("2006/01/02 15:04"),
+		softDue.Format("2006/01/02 15:04"),
 		timeStr,
+		assignment.DueDate.Format("2006/01/02 15:04"),
 	)
 
 	var errors []string
@@ -268,9 +270,10 @@ func (s *NotificationService) ProcessUrgentReminders() {
 	}
 
 	for _, assignment := range assignments {
-		timeUntilDue := assignment.DueDate.Sub(now)
+		softDue := assignment.GetEffectiveSoftDueDate()
+		timeUntilSoftDue := softDue.Sub(now)
 
-		if timeUntilDue > urgentStartTime {
+		if timeUntilSoftDue > urgentStartTime {
 			continue
 		}
 

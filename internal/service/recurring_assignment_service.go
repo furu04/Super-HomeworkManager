@@ -244,26 +244,27 @@ func (s *RecurringAssignmentService) UpdateAssignmentWithBehavior(
 	assignment *models.Assignment,
 	title, description, subject, priority string,
 	dueDate time.Time,
+	softDueDate *time.Time,
 	reminderEnabled bool,
 	reminderAt *time.Time,
 	urgentReminderEnabled bool,
 	editBehavior string,
 ) error {
 	if assignment.RecurringAssignmentID == nil {
-		return s.updateSingleAssignment(assignment, title, description, subject, priority, dueDate, reminderEnabled, reminderAt, urgentReminderEnabled)
+		return s.updateSingleAssignment(assignment, title, description, subject, priority, dueDate, softDueDate, reminderEnabled, reminderAt, urgentReminderEnabled)
 	}
 
 	recurring, err := s.GetByID(userID, *assignment.RecurringAssignmentID)
 	if err != nil {
-		return s.updateSingleAssignment(assignment, title, description, subject, priority, dueDate, reminderEnabled, reminderAt, urgentReminderEnabled)
+		return s.updateSingleAssignment(assignment, title, description, subject, priority, dueDate, softDueDate, reminderEnabled, reminderAt, urgentReminderEnabled)
 	}
 
 	switch editBehavior {
 	case models.EditBehaviorThisOnly:
-		return s.updateSingleAssignment(assignment, title, description, subject, priority, dueDate, reminderEnabled, reminderAt, urgentReminderEnabled)
+		return s.updateSingleAssignment(assignment, title, description, subject, priority, dueDate, softDueDate, reminderEnabled, reminderAt, urgentReminderEnabled)
 
 	case models.EditBehaviorThisAndFuture:
-		if err := s.updateSingleAssignment(assignment, title, description, subject, priority, dueDate, reminderEnabled, reminderAt, urgentReminderEnabled); err != nil {
+		if err := s.updateSingleAssignment(assignment, title, description, subject, priority, dueDate, softDueDate, reminderEnabled, reminderAt, urgentReminderEnabled); err != nil {
 			return err
 		}
 		recurring.Title = title
@@ -288,7 +289,7 @@ func (s *RecurringAssignmentService) UpdateAssignmentWithBehavior(
 		return s.updateAllPendingAssignments(recurring.ID, title, description, subject, priority, urgentReminderEnabled)
 
 	default:
-		return s.updateSingleAssignment(assignment, title, description, subject, priority, dueDate, reminderEnabled, reminderAt, urgentReminderEnabled)
+		return s.updateSingleAssignment(assignment, title, description, subject, priority, dueDate, softDueDate, reminderEnabled, reminderAt, urgentReminderEnabled)
 	}
 }
 
@@ -296,6 +297,7 @@ func (s *RecurringAssignmentService) updateSingleAssignment(
 	assignment *models.Assignment,
 	title, description, subject, priority string,
 	dueDate time.Time,
+	softDueDate *time.Time,
 	reminderEnabled bool,
 	reminderAt *time.Time,
 	urgentReminderEnabled bool,
@@ -305,6 +307,7 @@ func (s *RecurringAssignmentService) updateSingleAssignment(
 	assignment.Subject = subject
 	assignment.Priority = priority
 	assignment.DueDate = dueDate
+	assignment.SoftDueDate = softDueDate
 	assignment.ReminderEnabled = reminderEnabled
 	assignment.ReminderAt = reminderAt
 	assignment.UrgentReminderEnabled = urgentReminderEnabled
@@ -471,6 +474,8 @@ func (s *RecurringAssignmentService) generateAssignment(recurring *models.Recurr
 		reminderAt = &t
 	}
 
+	softDue := dueDate.Add(-48 * time.Hour)
+
 	assignment := &models.Assignment{
 		UserID:                recurring.UserID,
 		Title:                 recurring.Title,
@@ -478,6 +483,7 @@ func (s *RecurringAssignmentService) generateAssignment(recurring *models.Recurr
 		Subject:               recurring.Subject,
 		Priority:              recurring.Priority,
 		DueDate:               dueDate,
+		SoftDueDate:           &softDue,
 		ReminderEnabled:       recurring.ReminderEnabled,
 		ReminderAt:            reminderAt,
 		UrgentReminderEnabled: recurring.UrgentReminderEnabled,

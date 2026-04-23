@@ -28,8 +28,13 @@
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label for="due_date" class="form-label">提出期限 <span class="text-danger" aria-hidden="true">*</span><span class="visually-hidden">（必須）</span></label>
+                        <label for="due_date" class="form-label">提出期限（ガチ期限） <span class="text-danger" aria-hidden="true">*</span><span class="visually-hidden">（必須）</span></label>
                         <input type="datetime-local" class="form-control" id="due_date" name="due_date" value="{{.defaultDueDate}}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="soft_due_date" class="form-label">自分の期限 <span class="badge bg-secondary">任意</span> <i class="bi bi-question-circle-fill text-muted" data-bs-toggle="tooltip" data-bs-placement="top" title="自分の期限とは、余裕を持って自分でこの期間までに提出するといった目標期限です。デフォルトでは2日前に設定されます。" aria-label="自分の期限の説明"></i></label>
+                        <input type="datetime-local" class="form-control" id="soft_due_date" name="soft_due_date" value="{{.defaultSoftDueDate}}">
+                        <div class="form-text small text-muted">鬼督促はこの期限を基準に通知します。</div>
                     </div>
                     <div class="mb-3">
                         <label for="description" class="form-label">説明</label>
@@ -156,6 +161,9 @@
     </div>
 </div>
 <script>
+    // Bootstrap tooltip初期化
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function(el) { new bootstrap.Tooltip(el); });
+
     function toggleReminderDate(checkbox) {
         document.getElementById('reminder_at_group').style.display = checkbox.checked ? 'block' : 'none';
     }
@@ -204,5 +212,25 @@
     document.getElementById('recurringSettings').addEventListener('show.bs.collapse', function () {
         updateLeadDaysMax();
     });
+
+    // Auto-sync soft_due_date when due_date changes
+    (function() {
+        var dueDateInput = document.getElementById('due_date');
+        var softDueDateInput = document.getElementById('soft_due_date');
+        var userEditedSoftDue = false;
+        softDueDateInput.addEventListener('input', function() { userEditedSoftDue = true; });
+        dueDateInput.addEventListener('change', function() {
+            if (userEditedSoftDue) return;
+            if (!dueDateInput.value) return;
+            var dueDate = new Date(dueDateInput.value);
+            dueDate.setDate(dueDate.getDate() - 2);
+            var y = dueDate.getFullYear();
+            var m = String(dueDate.getMonth() + 1).padStart(2, '0');
+            var d = String(dueDate.getDate()).padStart(2, '0');
+            var h = String(dueDate.getHours()).padStart(2, '0');
+            var min = String(dueDate.getMinutes()).padStart(2, '0');
+            softDueDateInput.value = y + '-' + m + '-' + d + 'T' + h + ':' + min;
+        });
+    })();
 </script>
 {{end}}

@@ -111,14 +111,16 @@ func (h *AssignmentHandler) New(c *gin.Context) {
 	now := time.Now()
 	tomorrow := now.AddDate(0, 0, 1)
 	defaultDue := time.Date(tomorrow.Year(), tomorrow.Month(), tomorrow.Day(), 23, 59, 0, 0, now.Location())
+	defaultSoftDue := defaultDue.Add(-48 * time.Hour)
 
 	RenderHTML(c, http.StatusOK, "assignments/new.html", gin.H{
-		"title":          "課題登録",
-		"isAdmin":        role == "admin",
-		"userName":       name,
-		"currentWeekday": int(now.Weekday()),
-		"currentDay":     now.Day(),
-		"defaultDueDate": defaultDue.Format("2006-01-02T15:04"),
+		"title":              "課題登録",
+		"isAdmin":            role == "admin",
+		"userName":           name,
+		"currentWeekday":     int(now.Weekday()),
+		"currentDay":         now.Day(),
+		"defaultDueDate":     defaultDue.Format("2006-01-02T15:04"),
+		"defaultSoftDueDate": defaultSoftDue.Format("2006-01-02T15:04"),
 	})
 }
 
@@ -176,6 +178,16 @@ func (h *AssignmentHandler) Create(c *gin.Context) {
 			return
 		}
 		dueDate = dueDate.Add(23*time.Hour + 59*time.Minute)
+	}
+
+	var softDueDate *time.Time
+	if softDueDateStr := c.PostForm("soft_due_date"); softDueDateStr != "" {
+		if parsed, err := time.ParseInLocation("2006-01-02T15:04", softDueDateStr, time.Local); err == nil {
+			softDueDate = &parsed
+		} else if parsed, err := time.ParseInLocation("2006-01-02", softDueDateStr, time.Local); err == nil {
+			p := parsed.Add(23*time.Hour + 59*time.Minute)
+			softDueDate = &p
+		}
 	}
 
 	recurrenceType := c.PostForm("recurrence_type")
@@ -265,7 +277,7 @@ func (h *AssignmentHandler) Create(c *gin.Context) {
 			return
 		}
 	} else {
-		assignment, err := h.assignmentService.Create(userID, title, description, subject, priority, dueDate, reminderEnabled, reminderAt, urgentReminderEnabled)
+		assignment, err := h.assignmentService.Create(userID, title, description, subject, priority, dueDate, softDueDate, reminderEnabled, reminderAt, urgentReminderEnabled)
 		if err != nil {
 			role, _ := c.Get(middleware.UserRoleKey)
 			name, _ := c.Get(middleware.UserNameKey)
@@ -352,7 +364,17 @@ func (h *AssignmentHandler) Update(c *gin.Context) {
 		dueDate = dueDate.Add(23*time.Hour + 59*time.Minute)
 	}
 
-	_, err = h.assignmentService.Update(userID, uint(id), title, description, subject, priority, dueDate, reminderEnabled, reminderAt, urgentReminderEnabled)
+	var softDueDate *time.Time
+	if softDueDateStr := c.PostForm("soft_due_date"); softDueDateStr != "" {
+		if parsed, err := time.ParseInLocation("2006-01-02T15:04", softDueDateStr, time.Local); err == nil {
+			softDueDate = &parsed
+		} else if parsed, err := time.ParseInLocation("2006-01-02", softDueDateStr, time.Local); err == nil {
+			p := parsed.Add(23*time.Hour + 59*time.Minute)
+			softDueDate = &p
+		}
+	}
+
+	_, err = h.assignmentService.Update(userID, uint(id), title, description, subject, priority, dueDate, softDueDate, reminderEnabled, reminderAt, urgentReminderEnabled)
 	if err != nil {
 		c.Redirect(http.StatusFound, "/assignments")
 		return
@@ -501,10 +523,9 @@ func (h *AssignmentHandler) ExportCSV(c *gin.Context) {
 	c.Header("Content-Disposition", "attachment; filename=\""+filename+"\"")
 
 	w := csv.NewWriter(c.Writer)
-	// UTF-8 BOM for Excel compatibility
 	c.Writer.Write([]byte("\xef\xbb\xbf"))
 
-	headers := []string{"ID", "タイトル", "科目", "説明", "重要度", "提出期限", "完了", "完了日時", "登録日時"}
+	headers := []string{"ID", "タイトル", "科目", "説明", "重要度", "提出期限", "自分の期限", "完了", "完了日時", "登録日時"}
 	w.Write(headers)
 
 	priorityLabel := map[string]string{"low": "低", "medium": "中", "high": "高"}
@@ -517,6 +538,10 @@ func (h *AssignmentHandler) ExportCSV(c *gin.Context) {
 		if a.CompletedAt != nil {
 			completedAt = a.CompletedAt.Format("2006/01/02 15:04")
 		}
+		softDueDateStr := ""
+		if a.SoftDueDate != nil {
+			softDueDateStr = a.SoftDueDate.Format("2006/01/02 15:04")
+		}
 		label := priorityLabel[a.Priority]
 		if label == "" {
 			label = a.Priority
@@ -528,6 +553,7 @@ func (h *AssignmentHandler) ExportCSV(c *gin.Context) {
 			a.Description,
 			label,
 			a.DueDate.Format("2006/01/02 15:04"),
+			softDueDateStr,
 			completed,
 			completedAt,
 			a.CreatedAt.Format("2006/01/02 15:04"),

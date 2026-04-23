@@ -239,6 +239,7 @@ type CreateAssignmentInput struct {
 	Subject     string `json:"subject"`
 	Priority    string `json:"priority"`
 	DueDate     string `json:"due_date" binding:"required"`
+	SoftDueDate string `json:"soft_due_date"`
 
 	ReminderEnabled       bool   `json:"reminder_enabled"`
 	ReminderAt            string `json:"reminder_at"`
@@ -352,7 +353,17 @@ func (h *APIHandler) CreateAssignment(c *gin.Context) {
 		return
 	}
 
-	assignment, err := h.assignmentService.Create(userID, input.Title, input.Description, input.Subject, input.Priority, dueDate, input.ReminderEnabled, reminderAt, urgentReminder)
+	var softDueDate *time.Time
+	if input.SoftDueDate != "" {
+		parsedSoft, err := parseDateString(input.SoftDueDate)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid soft_due_date format"})
+			return
+		}
+		softDueDate = &parsedSoft
+	}
+
+	assignment, err := h.assignmentService.Create(userID, input.Title, input.Description, input.Subject, input.Priority, dueDate, softDueDate, input.ReminderEnabled, reminderAt, urgentReminder)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create assignment"})
 		return
@@ -367,6 +378,7 @@ type UpdateAssignmentInput struct {
 	Subject               string `json:"subject"`
 	Priority              string `json:"priority"`
 	DueDate               string `json:"due_date"`
+	SoftDueDate           string `json:"soft_due_date"`
 	ReminderEnabled       *bool  `json:"reminder_enabled"`
 	ReminderAt            string `json:"reminder_at"`
 	UrgentReminderEnabled *bool  `json:"urgent_reminder_enabled"`
@@ -448,7 +460,17 @@ func (h *APIHandler) UpdateAssignment(c *gin.Context) {
 		urgentReminderEnabled = *input.UrgentReminderEnabled
 	}
 
-	assignment, err := h.assignmentService.Update(userID, uint(id), title, description, subject, priority, dueDate, reminderEnabled, reminderAt, urgentReminderEnabled)
+	softDueDate := existing.SoftDueDate
+	if input.SoftDueDate != "" {
+		parsedSoft, err := parseDateString(input.SoftDueDate)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid soft_due_date format"})
+			return
+		}
+		softDueDate = &parsedSoft
+	}
+
+	assignment, err := h.assignmentService.Update(userID, uint(id), title, description, subject, priority, dueDate, softDueDate, reminderEnabled, reminderAt, urgentReminderEnabled)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update assignment"})
 		return

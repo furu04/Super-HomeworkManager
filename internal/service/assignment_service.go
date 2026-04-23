@@ -31,7 +31,7 @@ func NewAssignmentService() *AssignmentService {
 	}
 }
 
-func (s *AssignmentService) Create(userID uint, title, description, subject, priority string, dueDate time.Time, reminderEnabled bool, reminderAt *time.Time, urgentReminderEnabled bool) (*models.Assignment, error) {
+func (s *AssignmentService) Create(userID uint, title, description, subject, priority string, dueDate time.Time, softDueDate *time.Time, reminderEnabled bool, reminderAt *time.Time, urgentReminderEnabled bool) (*models.Assignment, error) {
 	if priority == "" {
 		priority = "medium"
 	}
@@ -42,6 +42,7 @@ func (s *AssignmentService) Create(userID uint, title, description, subject, pri
 		Subject:               subject,
 		Priority:              priority,
 		DueDate:               dueDate,
+		SoftDueDate:           softDueDate,
 		IsCompleted:           false,
 		ReminderEnabled:       reminderEnabled,
 		ReminderAt:            reminderAt,
@@ -195,7 +196,7 @@ func (s *AssignmentService) SearchAssignments(userID uint, query, priority, filt
 	}, nil
 }
 
-func (s *AssignmentService) Update(userID, assignmentID uint, title, description, subject, priority string, dueDate time.Time, reminderEnabled bool, reminderAt *time.Time, urgentReminderEnabled bool) (*models.Assignment, error) {
+func (s *AssignmentService) Update(userID, assignmentID uint, title, description, subject, priority string, dueDate time.Time, softDueDate *time.Time, reminderEnabled bool, reminderAt *time.Time, urgentReminderEnabled bool) (*models.Assignment, error) {
 	assignment, err := s.GetByID(userID, assignmentID)
 	if err != nil {
 		return nil, err
@@ -206,6 +207,7 @@ func (s *AssignmentService) Update(userID, assignmentID uint, title, description
 	assignment.Subject = subject
 	assignment.Priority = priority
 	assignment.DueDate = dueDate
+	assignment.SoftDueDate = softDueDate
 	assignment.ReminderEnabled = reminderEnabled
 	assignment.ReminderAt = reminderAt
 	assignment.UrgentReminderEnabled = urgentReminderEnabled

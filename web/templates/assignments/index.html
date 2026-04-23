@@ -129,6 +129,7 @@
                         </td>
                         <td>
                             <div class="small fw-bold text-dark user-select-all">{{.DueDate.Format "2006/01/02 15:04"}}</div>
+                            {{if .SoftDueDate}}<div class="small text-info" title="自分の期限"><i class="bi bi-clock-history me-1" aria-hidden="true"></i>{{.SoftDueDate.Format "01/02 15:04"}}</div>{{end}}
                         </td>
                         <td class="countdown-col">
                             {{if not .IsCompleted}}

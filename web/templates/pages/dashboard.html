@@ -115,6 +115,7 @@
                         {{if eq .Priority "high"}}<span class="badge bg-danger me-1">高<span class="visually-hidden">（重要度：高）</span></span>{{end}}
                         <strong>{{.Title}}</strong>
                         <br><small class="text-danger">{{formatDateTime .DueDate}}</small>
+                        {{if .SoftDueDate}}<br><small class="text-info"><i class="bi bi-clock-history" aria-hidden="true"></i> 自分の期限: {{formatDateTime .SoftDueDate}}</small>{{end}}
                     </div>
                     <form action="/assignments/{{.ID}}/toggle" method="POST">
                         <input type="hidden" name="_csrf" value="{{$.csrfToken}}">
@@ -140,6 +141,7 @@
                         {{if eq .Priority "high"}}<span class="badge bg-danger me-1">高<span class="visually-hidden">（重要度：高）</span></span>{{end}}
                         <strong>{{.Title}}</strong>
                         <br><small class="text-muted">{{formatDateTime .DueDate}}</small>
+                        {{if .SoftDueDate}}<br><small class="text-info"><i class="bi bi-clock-history" aria-hidden="true"></i> 自分の期限: {{formatDateTime .SoftDueDate}}</small>{{end}}
                     </div>
                     <form action="/assignments/{{.ID}}/toggle" method="POST">
                         <input type="hidden" name="_csrf" value="{{$.csrfToken}}">
@@ -165,6 +167,7 @@
                         {{if eq .Priority "high"}}<span class="badge bg-danger me-1">高<span class="visually-hidden">（重要度：高）</span></span>{{end}}
                         <strong>{{.Title}}</strong>
                         <br><small class="text-muted">{{formatDateTime .DueDate}}</small>
+                        {{if .SoftDueDate}}<br><small class="text-info"><i class="bi bi-clock-history" aria-hidden="true"></i> 自分の期限: {{formatDateTime .SoftDueDate}}</small>{{end}}
                     </div>
                     <form action="/assignments/{{.ID}}/toggle" method="POST">
                         <input type="hidden" name="_csrf" value="{{$.csrfToken}}">

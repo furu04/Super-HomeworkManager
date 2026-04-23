@@ -28,8 +28,13 @@
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label for="due_date" class="form-label">提出期限 <span class="text-danger" aria-hidden="true">*</span><span class="visually-hidden">（必須）</span></label>
+                        <label for="due_date" class="form-label">提出期限（ガチ期限） <span class="text-danger" aria-hidden="true">*</span><span class="visually-hidden">（必須）</span></label>
                         <input type="datetime-local" class="form-control" id="due_date" name="due_date" value="{{formatDateInput .assignment.DueDate}}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="soft_due_date" class="form-label">自分の期限 <span class="badge bg-secondary">任意</span></label>
+                        <input type="datetime-local" class="form-control" id="soft_due_date" name="soft_due_date" value="{{if .assignment.SoftDueDate}}{{formatDateInput .assignment.SoftDueDate}}{{end}}">
+                        <div class="form-text small text-muted">鬼督促はこの期限を基準に通知します。未指定の場合は提出期限の2日前になります。</div>
                     </div>
                     <div class="mb-3">
                         <label for="description" class="form-label">説明</label>

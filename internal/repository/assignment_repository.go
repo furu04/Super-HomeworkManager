@@ -204,6 +204,28 @@ func (r *AssignmentRepository) CountOverdueByUserID(userID uint) (int64, error) 
 	return count, err
 }
 
+func (r *AssignmentRepository) CountDueTodayByUserID(userID uint) (int64, error) {
+	now := time.Now()
+	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	endOfDay := startOfDay.AddDate(0, 0, 1)
+	var count int64
+	err := r.db.Model(&models.Assignment{}).
+		Where("user_id = ? AND is_completed = ? AND due_date >= ? AND due_date < ?",
+			userID, false, startOfDay, endOfDay).Count(&count).Error
+	return count, err
+}
+
+func (r *AssignmentRepository) CountDueThisWeekByUserID(userID uint) (int64, error) {
+	now := time.Now()
+	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	weekLater := startOfDay.AddDate(0, 0, 7)
+	var count int64
+	err := r.db.Model(&models.Assignment{}).
+		Where("user_id = ? AND is_completed = ? AND due_date >= ? AND due_date < ?",
+			userID, false, startOfDay, weekLater).Count(&count).Error
+	return count, err
+}
+
 type StatisticsFilter struct {
 	Subject         string
 	From            *time.Time
@@ -372,7 +394,7 @@ func (r *AssignmentRepository) GetSubjectsByUserIDWithArchived(userID uint, incl
 	return subjects, err
 }
 
-func (r *AssignmentRepository) SearchWithPreload(userID uint, queryStr, priority, filter string, page, pageSize int) ([]models.Assignment, int64, error) {
+func (r *AssignmentRepository) SearchWithPreload(userID uint, queryStr, priority, filter, sort, subject string, page, pageSize int) ([]models.Assignment, int64, error) {
 	var assignments []models.Assignment
 	var totalCount int64
 
@@ -384,6 +406,10 @@ func (r *AssignmentRepository) SearchWithPreload(userID uint, queryStr, priority
 
 	if priority != "" {
 		dbQuery = dbQuery.Where("priority = ?", priority)
+	}
+
+	if subject != "" {
+		dbQuery = dbQuery.Where("subject = ?", subject)
 	}
 
 	now := time.Now()
@@ -410,11 +436,24 @@ func (r *AssignmentRepository) SearchWithPreload(userID uint, queryStr, priority
 		return nil, 0, err
 	}
 
-	if filter == "completed" {
-		dbQuery = dbQuery.Order("completed_at DESC")
-	} else {
-		dbQuery = dbQuery.Order("due_date ASC")
+	var orderClause string
+	switch sort {
+	case "due_desc":
+		orderClause = "is_pinned DESC, due_date DESC"
+	case "priority":
+		orderClause = "is_pinned DESC, CASE priority WHEN 'high' THEN 0 WHEN 'medium' THEN 1 ELSE 2 END ASC, due_date ASC"
+	case "created_desc":
+		orderClause = "is_pinned DESC, created_at DESC"
+	case "subject":
+		orderClause = "is_pinned DESC, subject ASC, due_date ASC"
+	default:
+		if filter == "completed" {
+			orderClause = "is_pinned DESC, completed_at DESC"
+		} else {
+			orderClause = "is_pinned DESC, due_date ASC"
+		}
 	}
+	dbQuery = dbQuery.Order(orderClause)
 
 	if page < 1 {
 		page = 1
@@ -426,4 +465,49 @@ func (r *AssignmentRepository) SearchWithPreload(userID uint, queryStr, priority
 
 	err := dbQuery.Preload("RecurringAssignment").Limit(pageSize).Offset(offset).Find(&assignments).Error
 	return assignments, totalCount, err
+}
+
+func (r *AssignmentRepository) TogglePin(userID, assignmentID uint) (*models.Assignment, error) {
+	var assignment models.Assignment
+	if err := r.db.Where("id = ? AND user_id = ?", assignmentID, userID).First(&assignment).Error; err != nil {
+		return nil, err
+	}
+	newPinned := !assignment.IsPinned
+	if err := r.db.Model(&assignment).Update("is_pinned", newPinned).Error; err != nil {
+		return nil, err
+	}
+	assignment.IsPinned = newPinned
+	return &assignment, nil
+}
+
+func (r *AssignmentRepository) BulkComplete(userID uint, ids []uint) error {
+	if len(ids) == 0 {
+		return nil
+	}
+	now := time.Now()
+	return r.db.Model(&models.Assignment{}).
+		Where("user_id = ? AND id IN ? AND is_completed = ?", userID, ids, false).
+		Updates(map[string]interface{}{
+			"is_completed": true,
+			"completed_at": now,
+		}).Error
+}
+
+func (r *AssignmentRepository) BulkDelete(userID uint, ids []uint) error {
+	if len(ids) == 0 {
+		return nil
+	}
+	return r.db.Where("user_id = ? AND id IN ?", userID, ids).
+		Delete(&models.Assignment{}).Error
+}
+
+func (r *AssignmentRepository) GetRecurringIDsByIDs(userID uint, ids []uint) ([]uint, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	var recurringIDs []uint
+	err := r.db.Model(&models.Assignment{}).
+		Where("user_id = ? AND id IN ? AND recurring_assignment_id IS NOT NULL", userID, ids).
+		Pluck("recurring_assignment_id", &recurringIDs).Error
+	return recurringIDs, err
 }

@@ -71,6 +71,7 @@ homework-manager/
 | Priority | string | 重要度 (`low`, `medium`, `high`) | Default: `medium` |
 | DueDate | time.Time | 提出期限 | Not Null |
 | IsCompleted | bool | 完了フラグ | Default: false |
+| IsPinned | bool | ピン留めフラグ | Default: false, Composite Index (user_id, is_pinned) |
 | IsArchived | bool | アーカイブフラグ | Default: false |
 | CompletedAt | *time.Time | 完了日時 | Nullable |
 | ReminderEnabled | bool | 1回リマインダー有効 | Default: false |

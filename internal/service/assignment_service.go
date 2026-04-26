@@ -172,7 +172,7 @@ func (s *AssignmentService) GetOverdueByUserPaginated(userID uint, page, pageSiz
 	}, nil
 }
 
-func (s *AssignmentService) SearchAssignments(userID uint, query, priority, filter string, page, pageSize int) (*PaginatedResult, error) {
+func (s *AssignmentService) SearchAssignments(userID uint, query, priority, filter, sort, subject string, page, pageSize int) (*PaginatedResult, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -180,7 +180,7 @@ func (s *AssignmentService) SearchAssignments(userID uint, query, priority, filt
 		pageSize = 10
 	}
 
-	assignments, totalCount, err := s.assignmentRepo.SearchWithPreload(userID, query, priority, filter, page, pageSize)
+	assignments, totalCount, err := s.assignmentRepo.SearchWithPreload(userID, query, priority, filter, sort, subject, page, pageSize)
 	if err != nil {
 		return nil, err
 	}
@@ -194,6 +194,22 @@ func (s *AssignmentService) SearchAssignments(userID uint, query, priority, filt
 		CurrentPage: page,
 		PageSize:    pageSize,
 	}, nil
+}
+
+func (s *AssignmentService) TogglePin(userID, assignmentID uint) (*models.Assignment, error) {
+	return s.assignmentRepo.TogglePin(userID, assignmentID)
+}
+
+func (s *AssignmentService) BulkComplete(userID uint, ids []uint) error {
+	return s.assignmentRepo.BulkComplete(userID, ids)
+}
+
+func (s *AssignmentService) BulkDelete(userID uint, ids []uint) error {
+	return s.assignmentRepo.BulkDelete(userID, ids)
+}
+
+func (s *AssignmentService) GetRecurringIDsByIDs(userID uint, ids []uint) ([]uint, error) {
+	return s.assignmentRepo.GetRecurringIDsByIDs(userID, ids)
 }
 
 func (s *AssignmentService) Update(userID, assignmentID uint, title, description, subject, priority string, dueDate time.Time, softDueDate *time.Time, reminderEnabled bool, reminderAt *time.Time, urgentReminderEnabled bool) (*models.Assignment, error) {
@@ -397,4 +413,27 @@ func (s *AssignmentService) GetSubjectsWithArchived(userID uint, includeArchived
 
 func (s *AssignmentService) GetArchivedSubjects(userID uint) ([]string, error) {
 	return s.assignmentRepo.GetArchivedSubjects(userID)
+}
+
+type TabCounts struct {
+	Pending     int64
+	DueToday    int64
+	DueThisWeek int64
+	Completed   int64
+	Overdue     int64
+}
+
+func (s *AssignmentService) GetTabCounts(userID uint) TabCounts {
+	pending, _ := s.assignmentRepo.CountPendingByUserID(userID)
+	dueToday, _ := s.assignmentRepo.CountDueTodayByUserID(userID)
+	dueThisWeek, _ := s.assignmentRepo.CountDueThisWeekByUserID(userID)
+	completed, _ := s.assignmentRepo.CountCompletedByUserID(userID)
+	overdue, _ := s.assignmentRepo.CountOverdueByUserID(userID)
+	return TabCounts{
+		Pending:     pending,
+		DueToday:    dueToday,
+		DueThisWeek: dueThisWeek,
+		Completed:   completed,
+		Overdue:     overdue,
+	}
 }

@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/csv"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -32,6 +33,18 @@ func NewAssignmentHandler(notificationService *service.NotificationService) *Ass
 func (h *AssignmentHandler) getUserID(c *gin.Context) uint {
 	userID, _ := c.Get(middleware.UserIDKey)
 	return userID.(uint)
+}
+
+func safeReferer(c *gin.Context, defaultPath string) string {
+	referer := c.Request.Referer()
+	if referer == "" {
+		return defaultPath
+	}
+	u, err := url.Parse(referer)
+	if err != nil || u.Host != c.Request.Host {
+		return defaultPath
+	}
+	return referer
 }
 
 func (h *AssignmentHandler) Dashboard(c *gin.Context) {
@@ -64,6 +77,8 @@ func (h *AssignmentHandler) Index(c *gin.Context) {
 	}
 	query := c.Query("q")
 	priority := c.Query("priority")
+	subject := c.Query("subject")
+	sort := c.Query("sort")
 	pageStr := c.DefaultQuery("page", "1")
 	page, err := strconv.Atoi(pageStr)
 	if err != nil || page < 1 {
@@ -71,7 +86,7 @@ func (h *AssignmentHandler) Index(c *gin.Context) {
 	}
 	const pageSize = 10
 
-	result, err := h.assignmentService.SearchAssignments(userID, query, priority, filter, page, pageSize)
+	result, err := h.assignmentService.SearchAssignments(userID, query, priority, filter, sort, subject, page, pageSize)
 
 	var assignments []models.Assignment
 	var totalPages, currentPage int
@@ -85,6 +100,9 @@ func (h *AssignmentHandler) Index(c *gin.Context) {
 		currentPage = result.CurrentPage
 	}
 
+	subjects, _ := h.assignmentService.GetSubjectsByUser(userID)
+	tabCounts := h.assignmentService.GetTabCounts(userID)
+
 	role, _ := c.Get(middleware.UserRoleKey)
 	name, _ := c.Get(middleware.UserNameKey)
 
@@ -94,6 +112,10 @@ func (h *AssignmentHandler) Index(c *gin.Context) {
 		"filter":      filter,
 		"query":       query,
 		"priority":    priority,
+		"subject":     subject,
+		"sort":        sort,
+		"subjects":    subjects,
+		"tabCounts":   tabCounts,
 		"isAdmin":     role == "admin",
 		"userName":    name,
 		"currentPage": currentPage,
@@ -103,6 +125,59 @@ func (h *AssignmentHandler) Index(c *gin.Context) {
 		"prevPage":    currentPage - 1,
 		"nextPage":    currentPage + 1,
 	})
+}
+
+func (h *AssignmentHandler) TogglePin(c *gin.Context) {
+	userID := h.getUserID(c)
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.Redirect(http.StatusFound, "/assignments")
+		return
+	}
+	if _, err := h.assignmentService.TogglePin(userID, uint(id)); err != nil {
+		c.Redirect(http.StatusFound, "/assignments")
+		return
+	}
+	c.Redirect(http.StatusFound, safeReferer(c, "/assignments"))
+}
+
+func (h *AssignmentHandler) BulkComplete(c *gin.Context) {
+	userID := h.getUserID(c)
+	rawIDs := c.PostFormArray("ids")
+	var ids []uint
+	for _, raw := range rawIDs {
+		if v, err := strconv.ParseUint(raw, 10, 32); err == nil {
+			ids = append(ids, uint(v))
+		}
+	}
+	if err := h.assignmentService.BulkComplete(userID, ids); err != nil {
+		c.Redirect(http.StatusFound, "/assignments")
+		return
+	}
+	c.Redirect(http.StatusFound, safeReferer(c, "/assignments"))
+}
+
+func (h *AssignmentHandler) BulkDelete(c *gin.Context) {
+	userID := h.getUserID(c)
+	rawIDs := c.PostFormArray("ids")
+	var ids []uint
+	for _, raw := range rawIDs {
+		if v, err := strconv.ParseUint(raw, 10, 32); err == nil {
+			ids = append(ids, uint(v))
+		}
+	}
+	if c.PostForm("delete_recurring") == "true" {
+		if recurringIDs, err := h.assignmentService.GetRecurringIDsByIDs(userID, ids); err == nil {
+			for _, rid := range recurringIDs {
+				h.recurringService.Delete(userID, rid, false)
+			}
+		}
+	}
+	if err := h.assignmentService.BulkDelete(userID, ids); err != nil {
+		c.Redirect(http.StatusFound, "/assignments")
+		return
+	}
+	c.Redirect(http.StatusFound, safeReferer(c, "/assignments"))
 }
 
 func (h *AssignmentHandler) New(c *gin.Context) {

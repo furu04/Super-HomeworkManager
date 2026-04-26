@@ -8,7 +8,7 @@ import (
 
 type Assignment struct {
 	ID                     uint       `gorm:"primarykey" json:"id"`
-	UserID                 uint       `gorm:"not null;index" json:"user_id"`
+	UserID                 uint       `gorm:"not null;index;index:idx_user_pinned" json:"user_id"`
 	Title                  string     `gorm:"not null" json:"title"`
 	Description            string     `json:"description"`
 	Subject                string     `json:"subject"`
@@ -16,6 +16,7 @@ type Assignment struct {
 	DueDate                time.Time  `gorm:"not null" json:"due_date"`
 	SoftDueDate            *time.Time `json:"soft_due_date,omitempty"`
 	IsCompleted            bool       `gorm:"default:false" json:"is_completed"`
+	IsPinned               bool       `gorm:"default:false;index:idx_user_pinned" json:"is_pinned"`
 	IsArchived             bool       `gorm:"default:false;index" json:"is_archived"`
 	CompletedAt            *time.Time `json:"completed_at,omitempty"`
 	ReminderEnabled        bool       `gorm:"default:false" json:"reminder_enabled"`

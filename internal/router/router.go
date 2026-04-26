@@ -259,9 +259,12 @@ func Setup(cfg *config.Config) *gin.Engine {
 		auth.GET("/assignments", assignmentHandler.Index)
 		auth.GET("/assignments/new", assignmentHandler.New)
 		auth.POST("/assignments", assignmentHandler.Create)
+		auth.POST("/assignments/bulk-complete", assignmentHandler.BulkComplete)
+		auth.POST("/assignments/bulk-delete", assignmentHandler.BulkDelete)
 		auth.GET("/assignments/:id/edit", assignmentHandler.Edit)
 		auth.POST("/assignments/:id", assignmentHandler.Update)
 		auth.POST("/assignments/:id/toggle", assignmentHandler.Toggle)
+		auth.POST("/assignments/:id/pin", assignmentHandler.TogglePin)
 		auth.POST("/assignments/:id/delete", assignmentHandler.Delete)
 
 		auth.GET("/assignments/export", assignmentHandler.ExportCSV)

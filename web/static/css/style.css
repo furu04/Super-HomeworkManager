@@ -360,6 +360,11 @@ tr.kb-focus {
 }
 
 @media (max-width: 575.98px) {
+    table.custom-table,
+    table.custom-table > tbody {
+        display: block;
+        width: 100%;
+    }
     .custom-table thead {
         display: none;
     }

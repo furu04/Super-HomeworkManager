@@ -5,7 +5,7 @@
 
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-2">
     <h4 class="mb-0 fw-bold"><i class="bi bi-list-task me-2" aria-hidden="true"></i>課題一覧</h4>
-    <div class="d-flex gap-2 align-items-stretch align-items-md-center">
+    <div class="d-flex gap-2 align-items-center flex-wrap">
         <div class="btn-group btn-group-sm" role="group" aria-label="表示切替">
             <button type="button" class="btn btn-outline-secondary" id="viewTableBtn" onclick="setView('table')" title="テーブル表示">
                 <i class="bi bi-table" aria-hidden="true"></i>
@@ -14,13 +14,13 @@
                 <i class="bi bi-kanban" aria-hidden="true"></i>
             </button>
         </div>
-        <button class="btn btn-sm btn-outline-secondary flex-fill" id="groupToggleBtn" onclick="toggleGrouping()" title="科目でグループ化">
+        <button class="btn btn-sm btn-outline-secondary" id="groupToggleBtn" onclick="toggleGrouping()" title="科目でグループ化">
             <i class="bi bi-collection me-1" aria-hidden="true"></i><span id="groupBtnText" class="d-none d-sm-inline">グループ化</span>
         </button>
-        <button class="btn btn-sm btn-secondary text-white flex-fill" onclick="toggleCountdown()" id="toggleCountdownBtn" aria-pressed="false">
+        <button class="btn btn-sm btn-secondary text-white" onclick="toggleCountdown()" id="toggleCountdownBtn" aria-pressed="false">
             <i class="bi bi-clock me-1" aria-hidden="true"></i><span id="countdownBtnText" class="d-none d-sm-inline">残り非表示</span>
         </button>
-        <a href="/assignments/new" class="btn btn-sm btn-primary flex-fill text-nowrap text-center">
+        <a href="/assignments/new" class="btn btn-sm btn-primary">
             <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>新規登録
         </a>
     </div>

@@ -10,7 +10,7 @@
 
 <div class="card shadow-sm">
     <div class="table-responsive">
-        <table class="table table-hover mb-0" aria-label="繰り返し設定一覧">
+        <table class="table table-hover mb-0 custom-table" aria-label="繰り返し設定一覧">
             <thead class="table-light">
                 <tr>
                     <th scope="col" class="ps-3">タイトル</th>
@@ -22,7 +22,7 @@
             </thead>
             <tbody>
                 {{range .recurrings}}
-                <tr>
+                <tr class="recurring-row">
                     <td class="ps-3">
                         <div class="fw-bold">{{.Title}}</div>
                         {{if .Description}}

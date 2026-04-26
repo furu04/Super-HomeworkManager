@@ -3,9 +3,9 @@
 {{define "content"}}
 <input type="hidden" id="_csrf_global" value="{{.csrfToken}}">
 
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-2">
     <h4 class="mb-0 fw-bold"><i class="bi bi-list-task me-2" aria-hidden="true"></i>課題一覧</h4>
-    <div class="d-flex gap-2 align-items-center flex-wrap">
+    <div class="d-flex gap-2 align-items-stretch align-items-md-center">
         <div class="btn-group btn-group-sm" role="group" aria-label="表示切替">
             <button type="button" class="btn btn-outline-secondary" id="viewTableBtn" onclick="setView('table')" title="テーブル表示">
                 <i class="bi bi-table" aria-hidden="true"></i>
@@ -14,13 +14,13 @@
                 <i class="bi bi-kanban" aria-hidden="true"></i>
             </button>
         </div>
-        <button class="btn btn-sm btn-outline-secondary" id="groupToggleBtn" onclick="toggleGrouping()" title="科目でグループ化">
-            <i class="bi bi-collection me-1" aria-hidden="true"></i><span id="groupBtnText">グループ化</span>
+        <button class="btn btn-sm btn-outline-secondary flex-fill" id="groupToggleBtn" onclick="toggleGrouping()" title="科目でグループ化">
+            <i class="bi bi-collection me-1" aria-hidden="true"></i><span id="groupBtnText" class="d-none d-sm-inline">グループ化</span>
         </button>
-        <button class="btn btn-sm btn-secondary text-white" onclick="toggleCountdown()" id="toggleCountdownBtn" aria-pressed="false">
-            <i class="bi bi-clock me-1" aria-hidden="true"></i><span id="countdownBtnText">残り非表示</span>
+        <button class="btn btn-sm btn-secondary text-white flex-fill" onclick="toggleCountdown()" id="toggleCountdownBtn" aria-pressed="false">
+            <i class="bi bi-clock me-1" aria-hidden="true"></i><span id="countdownBtnText" class="d-none d-sm-inline">残り非表示</span>
         </button>
-        <a href="/assignments/new" class="btn btn-sm btn-primary">
+        <a href="/assignments/new" class="btn btn-sm btn-primary flex-fill text-nowrap text-center">
             <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>新規登録
         </a>
     </div>
@@ -57,14 +57,14 @@
 
 <form action="/assignments" method="GET" class="row g-2 mb-3 align-items-center" role="search">
     <input type="hidden" name="filter" value="{{.filter}}">
-    <div class="col-md-4">
+    <div class="col-md-4 col-12">
         <div class="input-group input-group-sm">
             <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search" aria-hidden="true"></i></span>
             <label for="searchInput" class="visually-hidden">課題を検索</label>
             <input type="text" class="form-control border-start-0 ps-0 bg-white" id="searchInput" name="q" placeholder="検索..." value="{{.query}}">
         </div>
     </div>
-    <div class="col-md-2">
+    <div class="col-md-2 col-6">
         <label for="priorityFilter" class="visually-hidden">重要度</label>
         <select class="form-select form-select-sm bg-white" id="priorityFilter" name="priority" onchange="this.form.submit()">
             <option value="">全重要度</option>
@@ -73,14 +73,14 @@
             <option value="low"    {{if eq .priority "low"   }}selected{{end}}>低</option>
         </select>
     </div>
-    <div class="col-md-2">
+    <div class="col-md-2 col-6">
         <label for="subjectFilter" class="visually-hidden">科目</label>
         <select class="form-select form-select-sm bg-white" id="subjectFilter" name="subject" onchange="this.form.submit()">
             <option value="">全科目</option>
             {{range .subjects}}<option value="{{.}}" {{if eq . $.subject}}selected{{end}}>{{.}}</option>{{end}}
         </select>
     </div>
-    <div class="col-md-2">
+    <div class="col-md-2 col-6">
         <label for="sortSelect" class="visually-hidden">並び順</label>
         <select class="form-select form-select-sm bg-white" id="sortSelect" name="sort" onchange="this.form.submit()">
             <option value=""         {{if eq .sort ""          }}selected{{end}}>期限昇順</option>
@@ -90,7 +90,7 @@
             <option value="created_desc" {{if eq .sort "created_desc"}}selected{{end}}>登録日時</option>
         </select>
     </div>
-    <div class="col-md-2">
+    <div class="col-md-2 col-6">
         <a href="/assignments?filter={{.filter}}" class="btn btn-sm btn-outline-secondary w-100 bg-white">クリア</a>
     </div>
 </form>

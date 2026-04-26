@@ -72,7 +72,7 @@
                         <div class="collapse" id="recurringSettings">
                             <div class="card-body py-2">
                                 <div class="row mb-2">
-                                    <div class="col-6">
+                                    <div class="col-sm-6 col-12 mb-2 mb-sm-0">
                                         <label for="recurrence_type" class="form-label small">繰り返しタイプ</label>
                                         <select class="form-select form-select-sm" id="recurrence_type" name="recurrence_type" onchange="updateRecurrenceOptions()">
                                             <option value="none" selected>なし</option>
@@ -81,7 +81,7 @@
                                             <option value="monthly">毎月</option>
                                         </select>
                                     </div>
-                                    <div class="col-6" id="interval_group" style="display: none;">
+                                    <div class="col-sm-6 col-12" id="interval_group" style="display: none;">
                                         <label for="recurrence_interval" class="form-label small">間隔</label>
                                         <div class="input-group input-group-sm">
                                             <input type="number" class="form-control" id="recurrence_interval" name="recurrence_interval" value="1" min="1" max="12" onchange="updateLeadDaysMax()">
@@ -142,10 +142,10 @@
                                         <label class="form-check-label small" for="end_date">終了日</label>
                                     </div>
                                     <div class="mt-1" id="end_count_group" style="display: none;">
-                                        <input type="number" class="form-control form-control-sm" id="end_count_value" name="end_count" value="10" min="1" style="width: 100px;">
+                                        <input type="number" class="form-control form-control-sm" id="end_count_value" name="end_count" value="10" min="1" style="max-width: 100px; width: 100%;">
                                     </div>
                                     <div class="mt-1" id="end_date_group" style="display: none;">
-                                        <input type="date" class="form-control form-control-sm" id="end_date_value" name="end_date" style="width: 150px;">
+                                        <input type="date" class="form-control form-control-sm" id="end_date_value" name="end_date" style="max-width: 150px; width: 100%;">
                                     </div>
                                 </div>
                             </div>
